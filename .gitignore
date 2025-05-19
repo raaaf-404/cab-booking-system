@@ -1,0 +1,20 @@
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Backend (Maven/Java)
+cab-booking-backend/target/
+cab-booking-backend/*.iml
+
+# Frontend (Node.js/React)
+cab-booking-frontend/node_modules/
+cab-booking-frontend/.env
+cab-booking-frontend/build/
+cab-booking-frontend/npm-debug.log*
+cab-booking-frontend/yarn-debug.log*
+cab-booking-frontend/yarn-error.log*
+
+# Logs
+logs/
+*.log
