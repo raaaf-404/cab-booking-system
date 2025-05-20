@@ -1,11 +1,12 @@
 package com.cabbooking.exception;
 
-import com.cabbooking.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+
+import com.cabbooking.dto.response.ApiResponse;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {

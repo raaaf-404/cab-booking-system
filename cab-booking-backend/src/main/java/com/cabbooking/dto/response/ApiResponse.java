@@ -1,4 +1,4 @@
-package com.cabbooking.dto;
+package com.cabbooking.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,9 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ApiResponse {
-    private boolean success;
-    private string message;
+public class ApiResponse<T> { // Added <T> to make it generic
+    private Boolean success;
+    private String message;  // Changed 'string' to 'String'
     private T data;
 
     public static <T> ApiResponse<T> success(T data) {
