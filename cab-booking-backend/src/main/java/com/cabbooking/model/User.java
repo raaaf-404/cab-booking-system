@@ -4,14 +4,17 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+
+
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
-
+import java.util.Collections;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -78,6 +81,15 @@ public class User {
         this.roles.add(role);
 
     }
+
+    public void setRole(Set<String> roles) {
+        this.roles = new HashSet<>(roles); // Create a copy to prevent external changes
+    }
+
+    public Set<String> getRoles() {
+        return Collections.unmodifiableSet(roles);
+    }
+    
 
 }
 
