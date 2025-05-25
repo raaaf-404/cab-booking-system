@@ -78,6 +78,7 @@ private LocalDateTime lastLocationUpdate;
 
 
 //Status
+@Builder.Default
 @Enumerated(EnumType.STRING)
 @Column(nullable = false)
 private AvailabilityStatus status = AvailabilityStatus.OFFLINE;
@@ -88,6 +89,7 @@ private AvailabilityStatus status = AvailabilityStatus.OFFLINE;
 private VehicleType vehicleType;
 
 //Pricing
+@Builder.Default
 @Column(name = "is_meter_fare", columnDefinition = "boolean default true")
 private Boolean isMeterFare = false;
 
@@ -109,8 +111,10 @@ private Integer manufacturingYear;
 @Min(value = 1, message = "Seating capacity must be at least 1")
 @Max(value = 20, message = "Seating capacity cannot exceed 20")
 @Column(name = "seating_capacity", nullable = false)
+@Builder.Default
 private Integer seatingCapacity = 4;  // Default value
 
+@Builder.Default
 @Column(name = "is_air_conditioned")
 private Boolean isAirConditioned = false;
 
