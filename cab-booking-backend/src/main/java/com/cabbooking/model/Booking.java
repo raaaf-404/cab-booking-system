@@ -67,7 +67,7 @@ public class Booking {
     private BigDecimal fare;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, name = "booking_status")
     private BookingStatus status = BookingStatus.PENDING;
 
     @Column(name = "scheduled_time")

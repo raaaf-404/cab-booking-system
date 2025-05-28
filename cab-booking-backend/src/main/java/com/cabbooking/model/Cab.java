@@ -136,11 +136,11 @@ public void markBooked() {
     this.updatedAt = LocalDateTime.now();
 }
 
-public BigDecimal calculateFare(Double distanceInKm) {
+public BigDecimal calculateFare(BigDecimal distanceInKm) {
     if (!isMeterFare || baseFare == null || ratePerKm == null) {
         throw new IllegalStateException("Meter fare calculation not supported for this cab");
     }
-    return baseFare.add(ratePerKm.multiply(BigDecimal.valueOf(distanceInKm)));
+    return baseFare.add(ratePerKm.multiply(distanceInKm));
 }
 
 public void updateLocation(Double latitude, Double longitude) {

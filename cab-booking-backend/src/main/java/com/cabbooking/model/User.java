@@ -87,7 +87,7 @@
         }
 
         public void setRole(Set<String> roles) {
-            this.roles = new HashSet<>(roles); // Create a copy to prevent external changes
+            this.roles = new HashSet<>(roles); 
         }
 
         public Set<String> getRoles() {
