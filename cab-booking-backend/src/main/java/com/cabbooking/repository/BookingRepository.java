@@ -9,8 +9,9 @@ import java.util.List;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
-    List<Booking> findByPassenger(User passenger);
-    List<Booking> findByDriver(User driver);
-    List<Booking> finfBYStatus(Booking.BookingStatus status);
+
+List<Booking> findByPassenger(User passenger);
+List<Booking> findByDriver(User driver);
+List<Booking> findByStatus(Booking.BookingStatus status);
 
 }
