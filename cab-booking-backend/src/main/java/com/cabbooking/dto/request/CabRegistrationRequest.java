@@ -29,7 +29,7 @@ public class CabRegistrationRequest {
     @Max(value = 20, message = "Seating capacity cannot exceed 20")
     private Integer seatingCapacity;
 
-    @NotNull(message = "Air conditioned status is required") // Booleans should use @NotNull
+    @NotNull(message = "Air conditioned status is required") 
     private Boolean isAirConditioned;
 
     @NotNull(message = "Meter fare status is required")
