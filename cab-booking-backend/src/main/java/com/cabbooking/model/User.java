@@ -108,7 +108,7 @@
             this.roles = new HashSet<>(roles); 
         }
 
-        public Set<String> getRoles() {
+        public Set<String> getRole() {
             return Collections.unmodifiableSet(roles);
         }
         
