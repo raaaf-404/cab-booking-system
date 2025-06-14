@@ -6,12 +6,18 @@ import com.cabbooking.exception.UserAlreadyExistsException;
 import com.cabbooking.model.User;
 import com.cabbooking.repository.UserRepository;
 import com.cabbooking.service.UserService;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder; // Import PasswordEncoder
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Optional;
+
+import java.util.stream.Collectors;
 
 
 @Service
@@ -63,6 +69,22 @@ public class UserServiceImpl implements UserService {
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+
+        // Convert your application's roles to Spring Security's GrantedAuthority
+        java.util.Set<GrantedAuthority> authorities = user.getRole().stream()
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toSet());
+
+        return new org.springframework.security.core.userdetails.User(
+                user.getEmail(), user.getPassword(), user.getIsActive(), true, true, true, authorities);
+    }
+        
 
     // Helper method to map User entity to UserResponse DTO
     private UserResponse mapToUserResponse(User user) {
