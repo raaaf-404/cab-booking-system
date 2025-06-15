@@ -44,9 +44,9 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setName(registrationRequest.getName());
         user.setEmail(registrationRequest.getEmail());
-        user.setPassword(passwordEncoder.encode(registrationRequest.getPassword())); // Encode password
+        user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
         user.setPhone(registrationRequest.getPhone());
-        user.setIsActive(true); // Or based on an email verification flow
+        user.setIsActive(true);
 
         // Handle roles
         if (registrationRequest.getRoles() == null || registrationRequest.getRoles().isEmpty()) {
