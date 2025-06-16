@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import java.util.stream.Collectors;
 
@@ -77,7 +78,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
         // Convert your application's roles to Spring Security's GrantedAuthority
-        java.util.Set<GrantedAuthority> authorities = user.getRole().stream()
+       Set<GrantedAuthority> authorities = user.getRole().stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toSet());
 
