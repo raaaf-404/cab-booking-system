@@ -17,13 +17,6 @@ public interface BookingService {
 
     List<BookingResponse> getBookingsByDriverId(Long driverId);
 
-    /**
-     * Updates the status of a booking.
-     * @param bookingId The ID of the booking to update.
-     * @param newStatus The new status for the booking.
-     * @param userId The ID of the user performing the action (for authorization).
-     * @return The updated booking details.
-     */
     BookingResponse updateBookingStatus(Long bookingId, Booking.BookingStatus newStatus, Long userId);
 
     BookingResponse assignDriverToBooking(Long bookingId, Long driverId);
