@@ -2,9 +2,9 @@ package com.cabbooking.service.impl;
 
 import com.cabbooking.dto.request.BookingRegistrationRequest;
 import com.cabbooking.dto.response.BookingResponse;
-import com.cabbooking.dto.response.UserResponse;
 import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.model.Booking;
+import com.cabbooking.model.User.Role; // Import Role enum
 import com.cabbooking.model.User;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.repository.UserRepository;
@@ -12,6 +12,7 @@ import com.cabbooking.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.cabbooking.mapper.UserMapper; // Import the UserMapper
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,25 +25,9 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final UserMapper userMapper; // Inject UserMapper
     // private final CabService cabService; // Inject if cab status updates are needed
 
-    private UserResponse mapUserToUserResponse(User user) {
-        if (user == null) {
-            return null;
-        }
-        UserResponse userResponse = new UserResponse();
-        userResponse.setId(user.getId());
-        userResponse.setUsername(user.getUsername());
-        userResponse.setEmail(user.getEmail());
-        userResponse.setFullName(user.getFullName());
-        userResponse.setPhoneNumber(user.getPhoneNumber());
-        if (user.getRole() != null) {
-            userResponse.setRole(user.getRole().name());
-        }
-        userResponse.setCreatedAt(user.getCreatedAt());
-        // Add other fields as necessary from your UserResponse DTO
-        return userResponse;
-    }
 
     private BookingResponse convertToBookingResponse(Booking booking) {
         if (booking == null) {
@@ -50,8 +35,8 @@ public class BookingServiceImpl implements BookingService {
         }
         BookingResponse response = new BookingResponse();
         response.setId(booking.getId());
-        response.setPassenger(mapUserToUserResponse(booking.getPassenger()));
-        response.setDriver(mapUserToUserResponse(booking.getDriver()));
+        response.setPassenger(userMapper.mapToUserResponse(booking.getPassenger())); // Use injected mapper
+        response.setDriver(userMapper.mapToUserResponse(booking.getDriver()));    // Use injected mapper
         response.setPickupLocation(booking.getPickupLocation());
         response.setDropoffLocation(booking.getDropoffLocation());
         response.setPickupLatitude(booking.getPickupLatitude());
@@ -150,7 +135,7 @@ public class BookingServiceImpl implements BookingService {
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
 
-        if (driver.getRole() != User.Role.DRIVER) {
+        if (!driver.getRole().contains(Role.DRIVER.name())) { // Check if roles set contains DRIVER
             throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
         }
         if (booking.getStatus() != Booking.BookingStatus.PENDING) {
@@ -247,7 +232,7 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingResponse> findPendingBookingsForDriverAssignment() {
         // This assumes PENDING bookings are those needing a driver.
         // You might refine this to include CONFIRMED bookings with no driver.
-        return bookingRepository.findByStatusInAndDriverIsNull(List.of(Booking.BookingStatus.PENDING))
+        return bookingRepository.findByStatusAndDriverIsNull(Booking.BookingStatus.PENDING)
                 .stream()
                 .map(this::convertToBookingResponse)
                 .collect(Collectors.toList());
