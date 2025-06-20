@@ -37,6 +37,12 @@
 
     public class User {
 
+        public enum Role {
+           USER,
+           DRIVER,
+          ADMIN
+        }
+
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
@@ -67,7 +73,7 @@
             joinColumns = @JoinColumn(name = "user_id"))
 
             @Column(name = "role")
-            private Set<String> roles = new HashSet<>();
+            private Set<Role> roles = new HashSet<>();
 
 
         @CreatedBy
@@ -99,16 +105,16 @@
         }
 
         //Helper method to add role
-        public void addRole(String role) {
+        public void addRole(Role role) {
             this.roles.add(role);
 
         }
 
-        public void setRole(Set<String> roles) {
+        public void setRole(Set<Role> roles) {
             this.roles = new HashSet<>(roles); 
         }
 
-        public Set<String> getRole() {
+        public Set<Role> getRole() {
             return Collections.unmodifiableSet(roles);
         }
         
