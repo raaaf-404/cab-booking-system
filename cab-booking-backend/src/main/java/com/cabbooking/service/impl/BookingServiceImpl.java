@@ -135,7 +135,7 @@ public class BookingServiceImpl implements BookingService {
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
 
-        if (!driver.getRole().contains(Role.DRIVER.name())) { // Check if roles set contains DRIVER
+        if (!driver.getRole().contains(Role.DRIVER)) { // Check if the Set<User.Role> contains the DRIVER enum constant
             throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
         }
         if (booking.getStatus() != Booking.BookingStatus.PENDING) {
