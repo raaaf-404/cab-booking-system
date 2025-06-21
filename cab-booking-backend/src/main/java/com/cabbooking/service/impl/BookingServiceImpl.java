@@ -126,7 +126,6 @@ public class BookingServiceImpl implements BookingService {
         User requestingUser = userRepository.findByEmail(authenticatedUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + authenticatedUserEmail));
                 
-
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
@@ -137,7 +136,6 @@ public class BookingServiceImpl implements BookingService {
         }
 
         boolean isAuthorized = false;
-
         if (requestingUser.getRole().contains(Role.ADMIN)) {
             isAuthorized = true;
         } else if (requestingUser.getRole().contains(Role.USER)) {

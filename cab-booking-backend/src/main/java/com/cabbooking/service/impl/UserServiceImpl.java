@@ -53,10 +53,24 @@ public class UserServiceImpl implements UserService {
         user.setIsActive(true);
 
         // Handle roles
-        if (registrationRequest.getRoles() == null || registrationRequest.getRoles().isEmpty()) {
-            user.addRole("ROLE_USER"); // Default role
+        Set<String> requestedRoles = registrationRequest.getRoles();
+        if (requestedRoles == null || requestedRoles.isEmpty()) {
+            user.addRole(User.Role.USER); // Default role
         } else {
-            user.setRole(new HashSet<>(registrationRequest.getRoles()));
+            Set<User.Role> rolesToSet = new HashSet<>();
+            for (String roleStr : requestedRoles) {
+                try {
+                    // We need to convert them to the enum: USER, DRIVER
+                    rolesToSet.add(User.Role.valueOf(roleStr.toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Warning: Invalid role string received in registration request: " + roleStr);
+                }
+            }
+            if (!rolesToSet.isEmpty()) {
+                user.setRole(rolesToSet);
+            } else {
+                user.addRole(User.Role.USER); // Fallback to default if all requested roles were invalid
+            }
         }
 
         User savedUser = userRepository.save(user);
@@ -82,7 +96,8 @@ public class UserServiceImpl implements UserService {
 
         // Convert your application's roles to Spring Security's GrantedAuthority
        Set<GrantedAuthority> authorities = user.getRole().stream()
-                .map(SimpleGrantedAuthority::new)
+                // Spring Security expects roles with "ROLE_" prefix
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
                 .collect(Collectors.toSet());
 
         return new org.springframework.security.core.userdetails.User(
