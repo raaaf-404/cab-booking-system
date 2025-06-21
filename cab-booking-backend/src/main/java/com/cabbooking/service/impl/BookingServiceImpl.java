@@ -4,11 +4,14 @@ import com.cabbooking.dto.request.BookingRegistrationRequest;
 import com.cabbooking.dto.response.BookingResponse;
 import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.model.Booking;
-import com.cabbooking.model.User.Role; // Import Role enum
+import com.cabbooking.model.User.Role;
+import com.cabbooking.model.Cab;
 import com.cabbooking.model.User;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.repository.UserRepository;
+import com.cabbooking.repository.CabRepository;
 import com.cabbooking.service.BookingService;
+import com.cabbooking.service.CabService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +33,8 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final CabRepository cabRepository;
+    private final CabService cabService;
 
 
     private BookingResponse convertToBookingResponse(Booking booking) {
@@ -218,10 +223,14 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus(Booking.BookingStatus.CANCELLED);
         booking.setUpdatedAt(LocalDateTime.now());
-        // Optionally update cab status if a driver was assigned:
-        // if (booking.getDriver() != null && booking.getDriver().getAssignedCab() != null && cabService != null) {
-        //    cabService.updateCabAvailabilityStatus(booking.getDriver().getAssignedCab().getId(), Cab.AvailabilityStatus.AVAILABLE);
-        // }
+        
+       User driver = booking.getDriver();
+       if (driver != null) {
+            cabRepository.findByDriver(driver).ifPresent(cab -> {
+                cabService.updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.AVAILABLE);
+            });
+       }
+
         return convertToBookingResponse(bookingRepository.save(booking));
     }
 

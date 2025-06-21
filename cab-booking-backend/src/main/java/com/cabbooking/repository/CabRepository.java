@@ -1,6 +1,7 @@
 package com.cabbooking.repository;
 
 import com.cabbooking.model.Cab;
+import com.cabbooking.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,5 +14,6 @@ public interface CabRepository extends  JpaRepository<Cab, Long> {
     Optional<Cab> findByLicensePlateNumber(String licensePlateNumber);
     List<Cab> findByStatus(Cab.AvailabilityStatus status);
     List<Cab> findByVehicleTypeAndStatus(Cab.VehicleType vehicleType, Cab.AvailabilityStatus status);
+    Optional<Cab> findByDriver(User driver);
     
 }
