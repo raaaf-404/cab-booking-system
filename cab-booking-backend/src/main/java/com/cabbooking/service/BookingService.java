@@ -17,7 +17,7 @@ public interface BookingService {
 
     List<BookingResponse> getBookingsByDriverId(Long driverId);
 
-    BookingResponse updateBookingStatus(Long bookingId, Booking.BookingStatus newStatus, Long userId);
+    BookingResponse updateBookingStatus(Long bookingId, Booking.BookingStatus newStatus);
 
     BookingResponse assignDriverToBooking(Long bookingId, Long driverId);
 

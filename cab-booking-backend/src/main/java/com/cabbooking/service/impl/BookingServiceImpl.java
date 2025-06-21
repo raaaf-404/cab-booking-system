@@ -11,22 +11,25 @@ import com.cabbooking.repository.UserRepository;
 import com.cabbooking.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
-import com.cabbooking.mapper.UserMapper; // Import the UserMapper
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.cabbooking.mapper.UserMapper;
 
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
-
+    
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
-    private final UserMapper userMapper; // Inject UserMapper
-    // private final CabService cabService; // Inject if cab status updates are needed
+    private final UserMapper userMapper;
 
 
     private BookingResponse convertToBookingResponse(Booking booking) {
@@ -112,14 +115,47 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public BookingResponse updateBookingStatus(Long bookingId, Booking.BookingStatus newStatus, Long userId) {
-        // TODO: Add authorization logic based on userId
+    public BookingResponse updateBookingStatus(Long bookingId, Booking.BookingStatus newStatus) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new AccessDeniedException("User is not authenticated");
+        }
+        Object principal = authentication.getPrincipal();
+        String authenticatedUserEmail = principal instanceof UserDetails ? ((UserDetails) principal).getUsername() : principal.toString();
+        User requestingUser = userRepository.findByEmail(authenticatedUserEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + authenticatedUserEmail));
+                
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
         // Basic state transition validation
-        if (booking.getStatus() == Booking.BookingStatus.COMPLETED || booking.getStatus() == Booking.BookingStatus.CANCELLED) {
+        Booking.BookingStatus currentStatus = booking.getStatus();
+        if (currentStatus == Booking.BookingStatus.COMPLETED || currentStatus == Booking.BookingStatus.CANCELLED ) {
             throw new IllegalStateException("Cannot update status for a booking that is already " + booking.getStatus());
+        }
+
+        boolean isAuthorized = false;
+
+        if (requestingUser.getRole().contains(Role.ADMIN)) {
+            isAuthorized = true;
+        } else if (requestingUser.getRole().contains(Role.USER)) {
+            // Passenger can cancel their own booking if it's in a cancellable state
+            if (booking.getPassenger() != null && booking.getPassenger().getId().equals(requestingUser.getId())) {
+                if (newStatus == Booking.BookingStatus.CANCELLED && booking.canBeCancelled()) {
+                    isAuthorized = true;
+                }
+            }
+        } else if (requestingUser.getRole().contains(Role.DRIVER)) {
+            // Driver can reject an assigned booking
+            if (newStatus == Booking.BookingStatus.REJECTED && booking.getDriver() != null && booking.getDriver().getId().equals(requestingUser.getId())) {
+                isAuthorized = true;
+            }
+        }
+
+        if (!isAuthorized) {
+            throw new AccessDeniedException("User " + requestingUser.getId() + " is not authorized to update booking " + bookingId + " from " + currentStatus + " to status " + newStatus);
         }
 
         booking.setStatus(newStatus);
