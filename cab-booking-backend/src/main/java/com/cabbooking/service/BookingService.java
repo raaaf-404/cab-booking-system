@@ -21,7 +21,7 @@ public interface BookingService {
 
     BookingResponse assignDriverToBooking(Long bookingId, Long driverId);
 
-    BookingResponse cancelBooking(Long bookingId, Long userId);
+    BookingResponse cancelBooking(Long bookingId);
 
     BookingResponse startRide(Long bookingId, Long driverId);
 

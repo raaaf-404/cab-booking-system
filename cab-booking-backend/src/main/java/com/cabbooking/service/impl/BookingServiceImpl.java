@@ -188,13 +188,32 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public BookingResponse cancelBooking(Long bookingId, Long userId) {
-        // TODO: Add authorization logic (e.g., passenger can cancel their own booking if PENDING/CONFIRMED)
+    public BookingResponse cancelBooking(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
-        if (booking.getStatus() == Booking.BookingStatus.IN_PROGRESS || booking.getStatus() == Booking.BookingStatus.COMPLETED) {
-            throw new IllegalStateException("Cannot cancel a booking that is " + booking.getStatus());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new AccessDeniedException("You must logged in to cancel a booking");
+        }
+
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email " + currentUserEmail));
+        
+         //Authorization Check:
+         // Allow cancellation if the user is an ADMIN or is the passenger who owns the booking.
+         boolean isOwner = booking.getPassenger().getId().equals(currentUser.getId());
+         boolean isAdmin = currentUser.getRole().contains(User.Role.ADMIN);
+
+         if (!isOwner && !isAdmin) {
+            throw new AccessDeniedException("You are not authorized to cancel this booking.");
+         }
+
+         //Business Rule Check:
+         // Checking if booking is in a cancellable state
+         if(!booking.canBeCancelled()) {
+            throw new IllegalStateException("Booking cannot be cancelled in its current state: " + booking.getStatus());
         }
 
         booking.setStatus(Booking.BookingStatus.CANCELLED);
