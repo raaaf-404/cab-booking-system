@@ -333,9 +333,9 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<BookingResponse> findPendingBookingsForDriverAssignment() {
-        // This assumes PENDING bookings are those needing a driver.
-        // You might refine this to include CONFIRMED bookings with no driver.
-        return bookingRepository.findByStatusAndDriverIsNull(Booking.BookingStatus.PENDING)
+
+        List<Booking.BookingStatus> statuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
+        return bookingRepository.findByStatusInAndDriverIsNull(statuses)
                 .stream()
                 .map(this::convertToBookingResponse)
                 .collect(Collectors.toList());
