@@ -309,6 +309,11 @@ public class BookingServiceImpl implements BookingService {
         booking.setEndTime(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
 
+        //Update Cab Status
+        cabRepository.findByDriver(driver).ifPresent(cab -> {
+        cabService.updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.AVAILABLE);
+        });
+        
         return convertToBookingResponse(bookingRepository.save(booking));
     }
 
