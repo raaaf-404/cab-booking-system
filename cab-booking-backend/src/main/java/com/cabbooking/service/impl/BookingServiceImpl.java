@@ -169,25 +169,37 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponse assignDriverToBooking(Long bookingId, Long driverId) {
+        //Fetch Records
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
 
+        //Validation
         if (!driver.getRole().contains(Role.DRIVER)) { // Check if the Set<User.Role> contains the DRIVER enum constant
             throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
         }
         if (booking.getStatus() != Booking.BookingStatus.PENDING) {
              throw new IllegalStateException("Driver can only be assigned to PENDING bookings. Current status: " + booking.getStatus());
         }
+        
+        //Validate Cab Status
+        Cab cab = cabRepository.findByDriver(driver)
+            .orElseThrow(() -> new ResourceNotFoundException("driver with id " + driverId + " does not have an assigned cab"));
 
+        if(cab.getStatus() != Cab.AvailabilityStatus.AVAILABLE) {
+                throw new IllegalStateException("The assigned driver is not currently available. Status: " + cab.getStatus());
+        }
+
+        //Update Booking
         booking.setDriver(driver);
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
         booking.setUpdatedAt(LocalDateTime.now());
-        // Optionally update cab status:
-        // if (driver.getAssignedCab() != null && cabService != null) {
-        //    cabService.updateCabAvailabilityStatus(driver.getAssignedCab().getId(), Cab.AvailabilityStatus.BOOKED);
-        // }
+
+        //Update Cab Status
+        cabService.updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.BOOKED);
+      
+        //Return BookingResponse
         return convertToBookingResponse(bookingRepository.save(booking));
     }
 
