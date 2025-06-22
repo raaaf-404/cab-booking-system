@@ -163,7 +163,31 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus(newStatus);
         booking.setUpdatedAt(LocalDateTime.now());
-        return convertToBookingResponse(bookingRepository.save(booking));
+
+       //Update cab status
+       User driver = booking.getDriver();
+       if (driver != null) {
+       cabRepository.findByDriver(driver).ifPresent(cab -> {
+            Cab.AvailabilityStatus newCabStatus = null;
+            switch(newStatus) {
+                case IN_PROGRESS:
+                newCabStatus = Cab.AvailabilityStatus.IN_RIDE;
+                    break;
+                case COMPLETED:
+                case CANCELLED:
+                case REJECTED:
+                newCabStatus = Cab.AvailabilityStatus.AVAILABLE;
+                    break;
+                default:
+                   break;
+            }
+
+            if (newCabStatus !=null) {
+                cabService.updateCabAvailabilityStatus(cab.getId(), newCabStatus);
+            }
+       });
+    }
+    return convertToBookingResponse(bookingRepository.save(booking));
     }
 
     @Override
@@ -268,23 +292,23 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponse completeRide(Long bookingId, Long driverId) {
+        //Fetch booking record
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
-
-        if (booking.getDriver() == null || !booking.getDriver().getId().equals(driverId)) {
+        User driver = booking.getDriver();
+        //Validation
+        if (driver == null || !driver.getId().equals(driverId)) {
             throw new IllegalStateException("Booking not assigned to this driver or no driver assigned.");
         }
         if (booking.getStatus() != Booking.BookingStatus.IN_PROGRESS) {
             throw new IllegalStateException("Ride can only be completed if IN_PROGRESS. Current status: " + booking.getStatus());
         }
 
+        //Update Booking
         booking.setStatus(Booking.BookingStatus.COMPLETED);
         booking.setEndTime(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
-        // Optionally update cab status:
-        // if (booking.getDriver() != null && booking.getDriver().getAssignedCab() != null && cabService != null) {
-        //    cabService.updateCabAvailabilityStatus(booking.getDriver().getAssignedCab().getId(), Cab.AvailabilityStatus.AVAILABLE);
-        // }
+
         return convertToBookingResponse(bookingRepository.save(booking));
     }
 
