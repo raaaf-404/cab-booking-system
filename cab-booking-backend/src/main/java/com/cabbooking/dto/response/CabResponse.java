@@ -7,13 +7,15 @@ import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
+import org.springframework.model.User;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class CabResponse {
     private Long id;
     private String licensePlateNumber;
-    private Long driverId;
+    private User driver;
     private Double latitude;
     private Double longitude; 
     private LocalDateTime lastLocationUpdate;
@@ -27,6 +29,4 @@ public class CabResponse {
     private Integer manufacturingYear;
     private Integer seatingCapacity;
     private Boolean isAirConditioned;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }
