@@ -7,7 +7,7 @@ import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.model.Cab;
 import com.cabbooking.repository.UserRepository;
 import com.cabbooking.model.User;
-import com.cabbooking.mapper.UserMapper;
+import com.cabbooking.mapper.CabMapper;
 import com.cabbooking.exception.CabAlreadyExistException;
 import com.cabbooking.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
@@ -18,38 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CabServiceImpl implements CabService {
     private final CabRepository cabRepository;
-    private final UserMapper userMapper;
+    private final CabMapper cabMapper;
     private final UserRepository userRepository;
-
-    private CabResponse convertToCabResponse(Cab cab) {
-        if (cab == null) {
-            return null;
-        }
-        CabResponse response = new CabResponse();
-        response.setId(cab.getId());
-        response.setLicensePlateNumber(cab.getLicensePlateNumber());
-        if (cab.getDriver() != null) {
-            response.setDriver(UserMapper.userMapper(cab.getDriver()));
-        }
-        response.setLatitude(cab.getLatitude());
-        response.setLongitude(cab.getLongitude());
-        response.setLastLocationUpdate(cab.getLastLocationUpdate());
-        if (cab.getStatus() != null) {
-            response.setStatus(cab.getStatus().name());
-        }
-        if (cab.getVehicleType() != null) {
-            response.setVehicleType(cab.getVehicleType().name());
-        }
-        response.setIsMeterFare(cab.getIsMeterFare());
-        response.setBaseFare(cab.getBaseFare());
-        response.setRatePerKm(cab.getRatePerKm());
-        response.setModel(cab.getModel());
-        response.setColor(cab.getColor());
-        response.setManufacturingYear(cab.getManufacturingYear());
-        response.setSeatingCapacity(cab.getSeatingCapacity());
-        response.setIsAirConditioned(cab.getIsAirConditioned());
-        return response;
-    }
 
     @Transactional
     @Override
@@ -81,6 +51,9 @@ public class CabServiceImpl implements CabService {
         cab.setManufacturingYear(request.getManufacturingYear());
         cab.setSeatingCapacity(request.getSeatingCapacity());
         cab.setIsAirConditioned(request.getIsAirConditioned());
-        return convertToCabResponse(cabRepository.save(cab));
+
+        Cab savedCab = cabRepository.save(cab);
+
+        return cabMapper.toCabResponse(savedCab);
     }
 }
