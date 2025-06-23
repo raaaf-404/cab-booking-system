@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface CabService {
     
-    CabResponse registerCab(CabRegistrationRequest registratrationRequest);
+    CabResponse registerCab(CabRegistrationRequest registrationRequest);
 
     Optional<CabResponse> getCarById(Long cabId);
 
