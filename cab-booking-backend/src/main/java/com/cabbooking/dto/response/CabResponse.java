@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
-import org.springframework.model.User;
+import com.cabbooking.dto.response.UserResponse;
 
 @Data
 @NoArgsConstructor
@@ -15,7 +15,7 @@ import org.springframework.model.User;
 public class CabResponse {
     private Long id;
     private String licensePlateNumber;
-    private User driver;
+    private UserResponse driver;
     private Double latitude;
     private Double longitude; 
     private LocalDateTime lastLocationUpdate;

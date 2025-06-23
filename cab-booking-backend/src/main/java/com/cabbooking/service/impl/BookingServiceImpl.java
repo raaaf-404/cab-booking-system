@@ -36,7 +36,6 @@ public class BookingServiceImpl implements BookingService {
     private final CabRepository cabRepository;
     private final CabService cabService;
 
-
     private BookingResponse convertToBookingResponse(Booking booking) {
         if (booking == null) {
             return null;
