@@ -13,14 +13,24 @@ import java.util.Optional;
 public interface CabService {
     
     CabResponse registerCab(CabRegistrationRequest registratrationRequest);
+
     Optional<CabResponse> getCarById(Long cabId);
+
     Optional<CabResponse> getCabByLicensePlate(String licensePlateNumber);
+
     CabResponse updateCabDetails(Long cabId, CabUpdateRequest request);
+
     CabResponse updateCabLocation(Long cabId, Double latitude, Double longitude);
+
     CabResponse updateCabAvailabilityStatus(Long cabId, AvailabilityStatus status);
+
     CabResponse assignDriverToCab(Long cabId, Long driverId);
+
     CabResponse removeDriverFromCab(Long cabId);
+
     List<CabResponse> findAvailableCabs(Cab.VehicleType vehicleType);
+
     List<CabResponse> getAllCabs();
+    
     void deleteCab(Long cabId);
 }
