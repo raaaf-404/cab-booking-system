@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class CabServiceImpl implements CabService {
@@ -21,23 +23,27 @@ public class CabServiceImpl implements CabService {
     private final CabMapper cabMapper;
     private final UserRepository userRepository;
 
+    private User validateAndGetDriver(Long driverId) {
+
+        User driver = userRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
+        
+        if (!driver.getRole().contains(User.Role.DRIVER)) {
+            throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
+        }
+
+        return driver;
+        }
+
     @Transactional
     @Override
     public CabResponse registerCab(CabRegistrationRequest request) {
-
-        //Fetch Driver
-        User driver = userRepository.findById(request.getDriverId())
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + request.getDriverId()));
-
-        //Validation
-        if (!driver.getRole().contains(User.Role.DRIVER)) {
-            throw new IllegalArgumentException("User with id " + request.getDriverId() + " is not a DRIVER.");
-        }
-
+        User driver = validateAndGetDriver(request.getDriverId());
+        
         if (cabRepository.findByLicensePlateNumber(request.getLicensePlateNumber()).isPresent()) {
             throw new CabAlreadyExistException("Cab with license plate numebr " + request.getLicensePlateNumber() + " already exists.");
         }
-        
+
         //Register Cab
         Cab cab = new Cab();
         cab.setDriver(driver);
@@ -55,5 +61,13 @@ public class CabServiceImpl implements CabService {
         Cab savedCab = cabRepository.save(cab);
 
         return cabMapper.toCabResponse(savedCab);
+    }
+    
+    @Transactional(readOnly = true)
+    @Override
+    public CabResponse getCabById(Long id) {
+        return cabRepository.findById(id)
+                .map(cabMapper::toCabResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + id));
     }
 }
