@@ -16,7 +16,7 @@ public interface CabService {
 
     CabResponse getCabById(Long cabId);
 
-    Optional<CabResponse> getCabByLicensePlate(String licensePlateNumber);
+    CabResponse getCabByLicensePlate(String licensePlateNumber);
 
     CabResponse updateCabDetails(Long cabId, CabUpdateRequest request);
 

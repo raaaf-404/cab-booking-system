@@ -62,12 +62,20 @@ public class CabServiceImpl implements CabService {
 
         return cabMapper.toCabResponse(savedCab);
     }
-    
+
     @Transactional(readOnly = true)
     @Override
     public CabResponse getCabById(Long id) {
         return cabRepository.findById(id)
                 .map(cabMapper::toCabResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CabResponse getCabByLicensePlate(String licensePlateNumber) {
+        return cabRepository.findByLicensePlateNumber(licensePlateNumber)
+                .map(cabMapper::toCabResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Cab not found with license plate number: " + licensePlateNumber));
     }
 }
