@@ -109,5 +109,16 @@ public class CabServiceImpl implements CabService {
         Cab updatedCab = cabRepository.save(cab);
         return cabMapper.toCabResponse(updatedCab);
     }
+
+    @Transactional
+    @Override
+    public CabResponse updateCabAvailabilityStatus(Long cabId, Cab.AvailabilityStatus status) {
+        Cab cab = cabRepository.findById(cabId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId));
+
+        cab.updateAvailabilityStatus(status);
+        Cab updatedCab = cabRepository.save(cab);
+        return cabMapper.toCabResponse(updatedCab);
+    }
   
 }

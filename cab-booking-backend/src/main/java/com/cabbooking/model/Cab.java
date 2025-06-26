@@ -138,7 +138,6 @@ public void markBooked() {
     this.status = AvailabilityStatus.BOOKED;
     this.updatedAt = LocalDateTime.now();
 }
-
 public BigDecimal calculateFare(BigDecimal distanceInKm) {
     if (!isMeterFare || baseFare == null || ratePerKm == null) {
         throw new IllegalStateException("Meter fare calculation not supported for this cab");
@@ -176,5 +175,9 @@ public void updateFromRequest(CabUpdateRequest request, User driver) {
     }
 }
 
+public void updateAvailabilityStatus(AvailabilityStatus newStatus) {
+    this.status = newStatus;
     
+}
+
 }
