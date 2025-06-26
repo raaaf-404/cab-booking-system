@@ -99,5 +99,15 @@ public class CabServiceImpl implements CabService {
         return cabMapper.toCabResponse(updatedCab);
     }
 
+    @Transactional
+    @Override
+    public CabResponse updateCabLocation(Long cabId, Double latitude, Double longitude) {
+        Cab cab = cabRepository.findById(cabId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId));
+        cab.updateLocation(latitude, longitude);
+
+        Cab updatedCab = cabRepository.save(cab);
+        return cabMapper.toCabResponse(updatedCab);
+    }
   
 }
