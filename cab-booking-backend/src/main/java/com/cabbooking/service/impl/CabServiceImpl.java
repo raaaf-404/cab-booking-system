@@ -145,6 +145,23 @@ public class CabServiceImpl implements CabService {
         return cabMapper.toCabResponse(updatedCab);
     }
 
+    @Transactional
+    @Override
+    public CabResponse removeDriverFromCab(Long cabId) {
+        Cab cab = cabRepository.findById(cabId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId);
+
+        if (cab.getDriver() == null) {
+            throw new IllegalStateException("Cab with id " + cabId + " has no driver assigned.");
+        }
+
+        cab.setDriver(null);
+        cab.setStatus(Cab.AvailabilityStatus.OFFLINE);
+
+        Cab updatedCab = cabRepository.save(cab);
+        return cabMapper.toCabResponse(updatedCab);
+    }
+
 
   
 }
