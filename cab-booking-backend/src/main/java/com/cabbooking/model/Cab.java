@@ -16,9 +16,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.cabbooking.dto.request.CabUpdateRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.Optional;
 
 @Data
 @Builder
@@ -74,7 +77,7 @@ private Double latitude;
 private Double longitude;
 
 @Column(name = "last_location_update")
-private LocalDateTime lastLocationUpdate;
+private Instant lastLocationUpdate;
 
 
 //Status
@@ -135,7 +138,6 @@ public void markBooked() {
     this.status = AvailabilityStatus.BOOKED;
     this.updatedAt = LocalDateTime.now();
 }
-
 public BigDecimal calculateFare(BigDecimal distanceInKm) {
     if (!isMeterFare || baseFare == null || ratePerKm == null) {
         throw new IllegalStateException("Meter fare calculation not supported for this cab");
@@ -144,10 +146,38 @@ public BigDecimal calculateFare(BigDecimal distanceInKm) {
 }
 
 public void updateLocation(Double latitude, Double longitude) {
+
+    if (latitude == null || latitude < -90.0 || latitude > 90.0) {
+        throw new IllegalArgumentException("Invalid latitude value: " + latitude);
+    }
+    if (longitude == null || longitude < -180.0 || longitude > 180.0) {
+        throw new IllegalArgumentException("Invalid longitude value: " + longitude);
+    }
+
     this.latitude = latitude;
     this.longitude = longitude;
-    this.lastLocationUpdate = LocalDateTime.now();
+    this.lastLocationUpdate = Instant.now();
 }
 
+public void updateFromRequest(CabUpdateRequest request, User driver) {
+    Optional.ofNullable(request.getModel()).ifPresent(this::setModel);
+    Optional.ofNullable(request.getColor()).ifPresent(this::setColor);
+    Optional.ofNullable(request.getSeatingCapacity()).ifPresent(this::setSeatingCapacity);
+    Optional.ofNullable(request.getIsAirConditioned()).ifPresent(this::setIsAirConditioned);
+    Optional.ofNullable(request.getVehicleType()).ifPresent(type -> this.setVehicleType(Cab.VehicleType.valueOf(type)));
+    Optional.ofNullable(request.getIsMeterFare()).ifPresent(this::setIsMeterFare);
+    Optional.ofNullable(request.getBaseFare()).ifPresent(this::setBaseFare);
+    Optional.ofNullable(request.getRatePerKm()).ifPresent(this::setRatePerKm);
+    Optional.ofNullable(request.getStatus()).ifPresent(status -> this.setStatus(Cab.AvailabilityStatus.valueOf(status)));
+
+    if (driver != null) {
+        this.setDriver(driver);
+    }
+}
+
+public void updateAvailabilityStatus(AvailabilityStatus newStatus) {
+    this.status = newStatus;
     
+}
+
 }
