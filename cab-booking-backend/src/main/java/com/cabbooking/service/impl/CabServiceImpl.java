@@ -120,5 +120,31 @@ public class CabServiceImpl implements CabService {
         Cab updatedCab = cabRepository.save(cab);
         return cabMapper.toCabResponse(updatedCab);
     }
+
+    @Transactional
+    @Override
+    public CabResponse assignDriverToCab(Long cabId, Long driverId) {
+
+        Cab cab = cabRepository.findById(cabId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId));
+
+        User driver = validateAndGetDriverById(driverId);
+
+        if (cab.getDriver() != null) {
+            throw new IllegalStateException("Cab is already assigned to a driver.");
+        }
+
+        cabRepository.findByDriver(driver).ifPresent(existingCab -> {
+            throw new IllegalStateException("Driver with id " + driverId + " is already assigned to another cab with id " + existingCab.getId());
+        });
+
+        cab.setDriver(driver);
+        cab.setStatus(Cab.AvailabilityStatus.AVAILABLE);
+
+        Cab updatedCab = cabRepository.save(cab);
+        return cabMapper.toCabResponse(updatedCab);
+    }
+
+
   
 }
