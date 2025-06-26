@@ -7,7 +7,6 @@ import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.dto.request.CabUpdateRequest;
 
 import java.util.List;
-import java.util.Optional;
 
 
 public interface CabService {

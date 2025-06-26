@@ -3,6 +3,7 @@ package com.cabbooking.service.impl;
 import com.cabbooking.service.CabService;
 import com.cabbooking.repository.CabRepository;
 import com.cabbooking.dto.request.CabRegistrationRequest;
+import com.cabbooking.dto.request.CabUpdateRequest;
 import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.model.Cab;
 import com.cabbooking.repository.UserRepository;
@@ -11,6 +12,9 @@ import com.cabbooking.mapper.CabMapper;
 import com.cabbooking.exception.CabAlreadyExistException;
 import com.cabbooking.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.access.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +27,7 @@ public class CabServiceImpl implements CabService {
     private final CabMapper cabMapper;
     private final UserRepository userRepository;
 
-    private User validateAndGetDriver(Long driverId) {
+    private User validateAndGetDriverById(Long driverId) {
 
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
@@ -38,7 +42,7 @@ public class CabServiceImpl implements CabService {
     @Transactional
     @Override
     public CabResponse registerCab(CabRegistrationRequest request) {
-        User driver = validateAndGetDriver(request.getDriverId());
+        User driver = validateAndGetDriverById(request.getDriverId());
         
         if (cabRepository.findByLicensePlateNumber(request.getLicensePlateNumber()).isPresent()) {
             throw new CabAlreadyExistException("Cab with license plate numebr " + request.getLicensePlateNumber() + " already exists.");
@@ -78,4 +82,22 @@ public class CabServiceImpl implements CabService {
                 .map(cabMapper::toCabResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Cab not found with license plate number: " + licensePlateNumber));
     }
+
+    @Transactional
+    @Override
+    public CabResponse updateCabDetails(Long cabId, CabUpdateRequest request) {
+       Cab cab = cabRepository.findById(cabId)
+            .orElseThrow(() -> new ResourceNotFoundException("Cab not found with an id: " + cabId));
+
+      User driverToSet = Optional.ofNullable(request.getDriverId())
+            .map(this::validateAndGetDriverById)
+            .orElse(null);
+
+      cab.updateFromRequest(request, driverToSet);
+
+        Cab updatedCab = cabRepository.save(cab);
+        return cabMapper.toCabResponse(updatedCab);
+    }
+
+  
 }
