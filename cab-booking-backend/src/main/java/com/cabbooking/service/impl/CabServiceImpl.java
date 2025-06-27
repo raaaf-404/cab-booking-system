@@ -7,18 +7,18 @@ import com.cabbooking.dto.request.CabUpdateRequest;
 import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.model.Cab;
 import com.cabbooking.repository.UserRepository;
+import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.model.User;
 import com.cabbooking.mapper.CabMapper;
 import com.cabbooking.exception.CabAlreadyExistException;
 import com.cabbooking.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.access.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +26,7 @@ public class CabServiceImpl implements CabService {
     private final CabRepository cabRepository;
     private final CabMapper cabMapper;
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
     private User validateAndGetDriverById(Long driverId) {
 
@@ -149,7 +150,7 @@ public class CabServiceImpl implements CabService {
     @Override
     public CabResponse removeDriverFromCab(Long cabId) {
         Cab cab = cabRepository.findById(cabId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId);
+                .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId));
 
         if (cab.getDriver() == null) {
             throw new IllegalStateException("Cab with id " + cabId + " has no driver assigned.");
@@ -161,7 +162,48 @@ public class CabServiceImpl implements CabService {
         Cab updatedCab = cabRepository.save(cab);
         return cabMapper.toCabResponse(updatedCab);
     }
+    
+    @Transactional(readOnly = true)
+    @Override
+    public List<CabResponse> findAvailableCabs(Cab.VehicleType vehicleType) {
+
+        List<Cab> availableCabs;
+        if (vehicleType != null) {
+            availableCabs =  cabRepository.findByVehicleTypeAndStatus(vehicleType, Cab.AvailabilityStatus.AVAILABLE);
+        } else {
+            availableCabs =  cabRepository.findByStatus(Cab.AvailabilityStatus.AVAILABLE);        
+        }
+
+        return availableCabs.stream()
+                .map(cabMapper::toCabResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<CabResponse> getAllCabs() {
+        return cabRepository.findAll().stream()
+                .map(cabMapper::toCabResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    @Override
+    public void deleteCab(Long cabId) {
+        
+        Cab cab  = cabRepository.findById(cabId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cab not found with an id: " + cabId));
+
+        cab.validateForDeletion();
+
+        if (bookingRepository.existsByCab(cab)) {
+            throw new IllegalStateException("Cannor delete cab with id " + cabId + "as it has associated booking records.");
+        }
+
+        cabRepository.delete(cab);
+    }
 
 
   
 }
+    
