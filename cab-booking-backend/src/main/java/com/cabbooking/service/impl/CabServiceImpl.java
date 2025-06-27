@@ -18,7 +18,9 @@ import org.springframework.security.access.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -161,7 +163,24 @@ public class CabServiceImpl implements CabService {
         Cab updatedCab = cabRepository.save(cab);
         return cabMapper.toCabResponse(updatedCab);
     }
+    
+    @Transactional(readOnly = true)
+    @Override
+    public List<CabResponse> findAvailableCabs(Cab.VehicleType vehicleType) {
+
+        List<Cab> availableCabs;
+        if (vehicleType != null) {
+            availableCabs =  cabRepository.findByVehicleTypeAndStatus(vehicleType, Cab.AvailabilityStatus.AVAILABLE);
+        } else {
+            availableCabs =  cabRepository.findByStatus(Cab.AvailabilityStatus.AVAILABLE);        
+        }
+
+        return availableCabs.stream()
+                .map(cabMapper::toCabResponse)
+                .collect(Collectors.toList());
+    }
 
 
   
 }
+    
