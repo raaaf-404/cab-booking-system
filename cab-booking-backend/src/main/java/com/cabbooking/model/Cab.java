@@ -180,4 +180,10 @@ public void updateAvailabilityStatus(AvailabilityStatus newStatus) {
     
 }
 
+public void validateForDeletion() {
+    if (this.getDriver() == null) {
+        throw new IllegalStateException("Cannot delete cab with id " + this.id + "as it has a driver assigned. Please remove the driver first.");
+    }
+}
+
 }
