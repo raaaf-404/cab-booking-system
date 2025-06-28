@@ -66,4 +66,20 @@ public class BookingController {
         }
     }
 
+    /**
+     * Endpoint to retrieve all bookings associated with a specific driver ID.
+     *
+     * @param driverId The ID of the driver.
+     * @return ResponseEntity with a list of BookingResponse.
+     */
+    @GetMapping("/driver/{driverId}")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByDriverId(@PathVariable Long driverId) {
+        try {
+            List<BookingResponse> bookings = bookingService.getBookingsByDriverId(driverId);
+            return new ResponseEntity<>(ApiResponse.success(bookings), HttpStatus.OK);
+        } catch (ResourceNotFoundException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+        }
+    }
+
 }
