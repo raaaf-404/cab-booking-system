@@ -82,4 +82,24 @@ public class BookingController {
         }
     }
 
+      /**
+     * Endpoint to update the status of a booking.
+     *
+     * @param bookingId The ID of the booking to update.
+     * @param newStatus The new status for the booking.
+     * @return ResponseEntity with the updated BookingResponse.
+     */
+    @PatchMapping("/{bookingId}/status")
+    public ResponseEntity<ApiResponse<BookingResponse>> updateBookingStatus(@PathVariable Long bookingId,
+                                                                         @RequestParam Booking.BookingStatus newStatus) {
+        try {
+            BookingResponse updatedBooking = bookingService.updateBookingStatus(bookingId, newStatus);
+            return new ResponseEntity<>(ApiResponse.success(updatedBooking), HttpStatus.OK);
+        } catch (ResourceNotFoundException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+        } catch (IllegalStateException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
 }
