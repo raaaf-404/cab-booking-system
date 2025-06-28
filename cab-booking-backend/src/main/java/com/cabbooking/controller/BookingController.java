@@ -36,7 +36,7 @@ public class BookingController {
             return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
         }
     }
-    
+
       /**
      * Endpoint to retrieve a booking by its ID.
      *
@@ -49,4 +49,21 @@ public class BookingController {
                 .map(bookingResponse -> new ResponseEntity<>(ApiResponse.success(bookingResponse), HttpStatus.OK))
                 .orElse(new ResponseEntity<>(ApiResponse.error("Booking not found with ID: " + bookingId), HttpStatus.NOT_FOUND));
     }
+
+       /**
+     * Endpoint to retrieve all bookings associated with a specific passenger ID.
+     *
+     * @param passengerId The ID of the passenger.
+     * @return ResponseEntity with a list of BookingResponse.
+     */
+    @GetMapping("/passenger/{passengerId}")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByPassengerId(@PathVariable Long passengerId) {
+        try {
+            List<BookingResponse> bookings = bookingService.getBookingsByPassengerId(passengerId);
+            return new ResponseEntity<>(ApiResponse.success(bookings), HttpStatus.OK);
+        } catch (ResourceNotFoundException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+        }
+    }
+
 }
