@@ -198,4 +198,15 @@ public class BookingController {
         }
     }
 
+      /**
+     * Endpoint to find all pending bookings that are awaiting driver assignment.
+     *
+     * @return ResponseEntity with a list of pending BookingResponse.
+     */
+    @GetMapping("/pending-assignment")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> findPendingBookingsForDriverAssignment() {
+        List<BookingResponse> pendingBookings = bookingService.findPendingBookingsForDriverAssignment();
+        return new ResponseEntity<>(ApiResponse.success(pendingBookings), HttpStatus.OK);
+    }
+
 }
