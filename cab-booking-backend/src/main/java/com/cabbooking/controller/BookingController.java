@@ -122,4 +122,22 @@ public class BookingController {
         }
     }
 
+    /**
+     * Endpoint to cancel a booking.
+     *
+     * @param bookingId The ID of the booking to cancel.
+     * @return ResponseEntity with the cancelled BookingResponse.
+     */
+    @PatchMapping("/{bookingId}/cancel")
+    public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(@PathVariable Long bookingId) {
+        try {
+            BookingResponse cancelledBooking = bookingService.cancelBooking(bookingId);
+            return new ResponseEntity<>(ApiResponse.success(cancelledBooking), HttpStatus.OK);
+        } catch (ResourceNotFoundException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+        } catch (IllegalStateException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
 }
