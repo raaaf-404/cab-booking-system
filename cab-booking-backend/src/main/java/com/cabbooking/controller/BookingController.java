@@ -178,4 +178,24 @@ public class BookingController {
         }
     }
 
+    /**
+     * Endpoint to update payment details for a booking.
+     *
+     * @param bookingId The ID of the booking.
+     * @param paymentStatus The payment status.
+     * @param paymentId The payment transaction ID.
+     * @return ResponseEntity with the updated BookingResponse.
+     */
+    @PatchMapping("/{bookingId}/payment")
+    public ResponseEntity<ApiResponse<BookingResponse>> updatePaymentDetails(@PathVariable Long bookingId,
+                                                                          @RequestParam boolean paymentStatus,
+                                                                          @RequestParam(required = false) String paymentId) {
+        try {
+            BookingResponse updatedBooking = bookingService.updatePaymentDetails(bookingId, paymentStatus, paymentId);
+            return new ResponseEntity<>(ApiResponse.success(updatedBooking), HttpStatus.OK);
+        } catch (ResourceNotFoundException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+        }
+    }
+
 }
