@@ -36,4 +36,17 @@ public class BookingController {
             return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
         }
     }
+    
+      /**
+     * Endpoint to retrieve a booking by its ID.
+     *
+     * @param bookingId The ID of the booking to retrieve.
+     * @return ResponseEntity with the BookingResponse if found, or HttpStatus.NOT_FOUND.
+     */
+    @GetMapping("/{bookingId}")
+    public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(@PathVariable Long bookingId) {
+        return bookingService.getBookingById(bookingId)
+                .map(bookingResponse -> new ResponseEntity<>(ApiResponse.success(bookingResponse), HttpStatus.OK))
+                .orElse(new ResponseEntity<>(ApiResponse.error("Booking not found with ID: " + bookingId), HttpStatus.NOT_FOUND));
+    }
 }
