@@ -159,4 +159,23 @@ public class BookingController {
         }
     }
 
+    /**
+     * Endpoint to complete a ride.
+     *
+     * @param bookingId The ID of the booking.
+     * @param driverId The ID of the driver completing the ride.
+     * @return ResponseEntity with the updated BookingResponse.
+     */
+    @PatchMapping("/{bookingId}/completeRide/{driverId}")
+    public ResponseEntity<ApiResponse<BookingResponse>> completeRide(@PathVariable Long bookingId, @PathVariable Long driverId) {
+        try {
+            BookingResponse completedBooking = bookingService.completeRide(bookingId, driverId);
+            return new ResponseEntity<>(ApiResponse.success(completedBooking), HttpStatus.OK);
+        } catch (ResourceNotFoundException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+        } catch (IllegalStateException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
 }
