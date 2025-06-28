@@ -102,4 +102,24 @@ public class BookingController {
         }
     }
 
+     /**
+     * Endpoint to assign a driver to a pending booking.
+     *
+     * @param bookingId The ID of the booking.
+     * @param driverId The ID of the driver to assign.
+     * @return ResponseEntity with the updated BookingResponse.
+     */
+    @PatchMapping("/{bookingId}/assignDriver/{driverId}")
+    public ResponseEntity<ApiResponse<BookingResponse>> assignDriverToBooking(@PathVariable Long bookingId,
+                                                                           @PathVariable Long driverId) {
+        try {
+            BookingResponse updatedBooking = bookingService.assignDriverToBooking(bookingId, driverId);
+            return new ResponseEntity<>(ApiResponse.success(updatedBooking), HttpStatus.OK);
+        } catch (ResourceNotFoundException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+        } catch (IllegalStateException | IllegalArgumentException ex) {
+            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
 }
