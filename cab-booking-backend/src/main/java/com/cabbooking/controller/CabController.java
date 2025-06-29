@@ -51,4 +51,16 @@ public class CabController {
         CabResponse cabResponse = cabService.getCabById(cabId);
         return ResponseEntity.ok(ApiResponse.success(cabResponse));
     }
+
+      /**
+     * Endpoint to retrieve a cab by its ID.
+     *
+     * @param licensePlateNumber the license plate number of the cab to retrieve
+     * @return ResponseEntity with the CabResponse and HTTPStatus.OK, or HTTPStatus.NOT_FOUND if not found
+     */
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<CabResponse>> getCabByLicensePlate(@RequestParam("licensePlate") String licensePlate) {
+        CabResponse cabResponse = cabService.getCabByLicensePlate(licensePlate);
+        return ResponseEntity.ok(ApiResponse.success(cabResponse));
+    }
 }
