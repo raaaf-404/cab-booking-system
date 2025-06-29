@@ -1,6 +1,5 @@
 package com.cabbooking.controller;
 
-import org.springframework.web.bind.annotation.RestController;
 import com.cabbooking.dto.request.CabRegistrationRequest;
 import com.cabbooking.dto.response.ApiResponse;
 import com.cabbooking.dto.response.CabResponse;
@@ -39,5 +38,17 @@ public class CabController {
 
         // 3. Return a 201 Created response with the Location header and the response body
         return ResponseEntity.created(location).body(ApiResponse.success(newCab));
+    }
+
+    /**
+     * Endpoint to retrieve a cab by its ID.
+     *
+     * @param cabId the ID of the cab to retrieve
+     * @return ResponseEntity with the CabResponse and HTTPStatus.OK, or HTTPStatus.NOT_FOUND if not found
+     */
+    @GetMapping("/{cabId}")
+    public ResponseEntity<ApiResponse<CabResponse>> getCabById(@PathVariable("cabId") Long cabId) {
+        CabResponse cabResponse = cabService.getCabById(cabId);
+        return ResponseEntity.ok(ApiResponse.success(cabResponse));
     }
 }
