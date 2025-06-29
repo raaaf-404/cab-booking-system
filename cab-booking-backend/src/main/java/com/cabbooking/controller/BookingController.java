@@ -16,7 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/bookings")
-@RequiredArgsConstructor // Lombok annotation for constructor injection of final fields
+@RequiredArgsConstructor
 public class BookingController {
 
     private final BookingService bookingService;
