@@ -29,12 +29,8 @@ public class BookingController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(@Valid @RequestBody BookingRegistrationRequest request) {
-        try {
-            BookingResponse newBooking = bookingService.createBooking(request);
-            return new ResponseEntity<>(ApiResponse.success(newBooking), HttpStatus.CREATED);
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-        }
+        BookingResponse newBooking = bookingService.createBooking(request);
+        return new ResponseEntity<>(ApiResponse.success(newBooking), HttpStatus.CREATED);
     }
 
       /**
@@ -47,7 +43,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(@PathVariable Long bookingId) {
         return bookingService.getBookingById(bookingId)
                 .map(bookingResponse -> new ResponseEntity<>(ApiResponse.success(bookingResponse), HttpStatus.OK))
-                .orElse(new ResponseEntity<>(ApiResponse.error("Booking not found with ID: " + bookingId), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
     }
 
        /**
@@ -58,12 +54,8 @@ public class BookingController {
      */
     @GetMapping("/passenger/{passengerId}")
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByPassengerId(@PathVariable Long passengerId) {
-        try {
-            List<BookingResponse> bookings = bookingService.getBookingsByPassengerId(passengerId);
-            return new ResponseEntity<>(ApiResponse.success(bookings), HttpStatus.OK);
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-        }
+        List<BookingResponse> bookings = bookingService.getBookingsByPassengerId(passengerId);
+        return new ResponseEntity<>(ApiResponse.success(bookings), HttpStatus.OK);
     }
 
     /**
@@ -74,12 +66,8 @@ public class BookingController {
      */
     @GetMapping("/driver/{driverId}")
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByDriverId(@PathVariable Long driverId) {
-        try {
-            List<BookingResponse> bookings = bookingService.getBookingsByDriverId(driverId);
-            return new ResponseEntity<>(ApiResponse.success(bookings), HttpStatus.OK);
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-        }
+        List<BookingResponse> bookings = bookingService.getBookingsByDriverId(driverId);
+        return new ResponseEntity<>(ApiResponse.success(bookings), HttpStatus.OK);
     }
 
       /**
@@ -92,14 +80,8 @@ public class BookingController {
     @PatchMapping("/{bookingId}/status")
     public ResponseEntity<ApiResponse<BookingResponse>> updateBookingStatus(@PathVariable Long bookingId,
                                                                          @RequestParam Booking.BookingStatus newStatus) {
-        try {
-            BookingResponse updatedBooking = bookingService.updateBookingStatus(bookingId, newStatus);
-            return new ResponseEntity<>(ApiResponse.success(updatedBooking), HttpStatus.OK);
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-        } catch (IllegalStateException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
-        }
+        BookingResponse updatedBooking = bookingService.updateBookingStatus(bookingId, newStatus);
+        return new ResponseEntity<>(ApiResponse.success(updatedBooking), HttpStatus.OK);
     }
 
      /**
@@ -112,14 +94,8 @@ public class BookingController {
     @PatchMapping("/{bookingId}/assignDriver/{driverId}")
     public ResponseEntity<ApiResponse<BookingResponse>> assignDriverToBooking(@PathVariable Long bookingId,
                                                                            @PathVariable Long driverId) {
-        try {
-            BookingResponse updatedBooking = bookingService.assignDriverToBooking(bookingId, driverId);
-            return new ResponseEntity<>(ApiResponse.success(updatedBooking), HttpStatus.OK);
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-        } catch (IllegalStateException | IllegalArgumentException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
-        }
+        BookingResponse updatedBooking = bookingService.assignDriverToBooking(bookingId, driverId);
+        return new ResponseEntity<>(ApiResponse.success(updatedBooking), HttpStatus.OK);
     }
 
     /**
@@ -130,14 +106,8 @@ public class BookingController {
      */
     @PatchMapping("/{bookingId}/cancel")
     public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(@PathVariable Long bookingId) {
-        try {
-            BookingResponse cancelledBooking = bookingService.cancelBooking(bookingId);
-            return new ResponseEntity<>(ApiResponse.success(cancelledBooking), HttpStatus.OK);
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-        } catch (IllegalStateException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
-        }
+        BookingResponse cancelledBooking = bookingService.cancelBooking(bookingId);
+        return new ResponseEntity<>(ApiResponse.success(cancelledBooking), HttpStatus.OK);
     }
 
      /**
@@ -149,14 +119,8 @@ public class BookingController {
      */
     @PatchMapping("/{bookingId}/startRide/{driverId}")
     public ResponseEntity<ApiResponse<BookingResponse>> startRide(@PathVariable Long bookingId, @PathVariable Long driverId) {
-        try {
-            BookingResponse startedBooking = bookingService.startRide(bookingId, driverId);
-            return new ResponseEntity<>(ApiResponse.success(startedBooking), HttpStatus.OK);
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-        } catch (IllegalStateException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
-        }
+        BookingResponse startedBooking = bookingService.startRide(bookingId, driverId);
+        return new ResponseEntity<>(ApiResponse.success(startedBooking), HttpStatus.OK);
     }
 
     /**
@@ -168,14 +132,8 @@ public class BookingController {
      */
     @PatchMapping("/{bookingId}/completeRide/{driverId}")
     public ResponseEntity<ApiResponse<BookingResponse>> completeRide(@PathVariable Long bookingId, @PathVariable Long driverId) {
-        try {
-            BookingResponse completedBooking = bookingService.completeRide(bookingId, driverId);
-            return new ResponseEntity<>(ApiResponse.success(completedBooking), HttpStatus.OK);
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-        } catch (IllegalStateException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
-        }
+        BookingResponse completedBooking = bookingService.completeRide(bookingId, driverId);
+        return new ResponseEntity<>(ApiResponse.success(completedBooking), HttpStatus.OK);
     }
 
     /**
@@ -190,12 +148,8 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponse>> updatePaymentDetails(@PathVariable Long bookingId,
                                                                           @RequestParam boolean paymentStatus,
                                                                           @RequestParam(required = false) String paymentId) {
-        try {
-            BookingResponse updatedBooking = bookingService.updatePaymentDetails(bookingId, paymentStatus, paymentId);
-            return new ResponseEntity<>(ApiResponse.success(updatedBooking), HttpStatus.OK);
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-        }
+        BookingResponse updatedBooking = bookingService.updatePaymentDetails(bookingId, paymentStatus, paymentId);
+        return new ResponseEntity<>(ApiResponse.success(updatedBooking), HttpStatus.OK);
     }
 
       /**
