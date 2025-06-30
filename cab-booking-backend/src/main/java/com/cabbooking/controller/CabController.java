@@ -1,6 +1,9 @@
 package com.cabbooking.controller;
 
 import com.cabbooking.dto.request.CabRegistrationRequest;
+import com.cabbooking.dto.request.CabUpdateRequest;
+import com.cabbooking.dto.request.LocationUpdateRequest;
+import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
 import com.cabbooking.dto.response.ApiResponse;
 import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.service.CabService;
@@ -62,5 +65,32 @@ public class CabController {
     public ResponseEntity<ApiResponse<CabResponse>> getCabByLicensePlate(@RequestParam("licensePlate") String licensePlate) {
         CabResponse cabResponse = cabService.getCabByLicensePlate(licensePlate);
         return ResponseEntity.ok(ApiResponse.success(cabResponse));
+    }
+
+     /**
+     * Endpoint to update cab details.
+     *
+     * @param cabId the ID of the cab to retrieve, and @param request the cab registration request containing cab details
+     * @return ResponseEntity with the CabResponse and HTTPStatus.OK, or HTTPStatus.NOT_FOUND if not found
+     */
+    @PatchMapping("/{cabId}/cab-details")
+    public ResponseEntity<ApiResponse<CabResponse>> updateCabDetails(@PathVariable Long cabId, 
+                                                                @RequestBody CabUpdateRequest request) {
+    CabResponse updatedCab = cabService.updateCabDetails(cabId, request);
+    return ResponseEntity.ok(ApiResponse.success(updatedCab));
+    }
+
+    @PatchMapping("/{cabId}/location")
+    public ResponseEntity<ApiResponse<CabResponse>> updateCabLocation(@PathVariable Long cabId,
+                                                                    @Valid @RequestBody LocationUpdateRequest request) {
+    CabResponse updatedCabLocation = cabService.updateCabLocation(cabId, request);
+    return ResponseEntity.ok(ApiResponse.success(updatedCabLocation));
+    }
+    
+    @PatchMapping("{cabId}/cab-availability-status")
+    public ResponseEntity<ApiResponse<CabResponse>> updateCabAvailabilityStatus(@PathVariable Long cabId,
+                                                                                @RequestBody CabUpdateAvailabilityStatusRequest request) {
+    CabResponse updatedCabStatus = cabService.updateCabAvailabilityStatus(cabId, request);
+    return ResponseEntity.ok(ApiResponse.success(updatedCabStatus));
     }
 }
