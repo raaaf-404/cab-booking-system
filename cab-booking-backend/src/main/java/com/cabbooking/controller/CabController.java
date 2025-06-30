@@ -4,6 +4,7 @@ import com.cabbooking.dto.request.CabRegistrationRequest;
 import com.cabbooking.dto.request.CabUpdateRequest;
 import com.cabbooking.dto.request.LocationUpdateRequest;
 import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
+import com.cabbooking.dto.request.DriverAssignmentRequest;
 import com.cabbooking.dto.response.ApiResponse;
 import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.service.CabService;
@@ -88,9 +89,20 @@ public class CabController {
     }
     
     @PatchMapping("{cabId}/cab-availability-status")
-    public ResponseEntity<ApiResponse<CabResponse>> updateCabAvailabilityStatus(@PathVariable Long cabId,
-                                                                                @RequestBody CabUpdateAvailabilityStatusRequest request) {
+    public ResponseEntity<ApiResponse<CabResponse>> updateCabAvailabilityStatus(
+           @PathVariable Long cabId,
+           @Valid @RequestBody CabUpdateAvailabilityStatusRequest request) {
     CabResponse updatedCabStatus = cabService.updateCabAvailabilityStatus(cabId, request);
     return ResponseEntity.ok(ApiResponse.success(updatedCabStatus));
     }
+
+    @PatchMapping("/{cabId}/assign-driver}")
+    public ResponseEntity<ApiResponse<CabResponse>> assignDriverToCab(
+           @PathVariable Long cabId,
+           @Valid @RequestBody DriverAssignmentRequest request) {
+    CabResponse assignedCab = cabService.assignDriverToCab(cabId, request);
+    return ResponseEntity.ok(ApiResponse.success(assignedCab));
+    }
+
+    
 }

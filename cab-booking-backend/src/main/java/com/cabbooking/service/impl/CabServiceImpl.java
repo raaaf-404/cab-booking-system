@@ -4,6 +4,7 @@ import com.cabbooking.service.CabService;
 import com.cabbooking.repository.CabRepository;
 import com.cabbooking.dto.request.CabRegistrationRequest;
 import com.cabbooking.dto.request.CabUpdateRequest;
+import com.cabbooking.dto.request.DriverAssignmentRequest;
 import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
 import com.cabbooking.dto.request.LocationUpdateRequest;
 import com.cabbooking.dto.response.CabResponse;
@@ -127,11 +128,12 @@ public class CabServiceImpl implements CabService {
 
     @Transactional
     @Override
-    public CabResponse assignDriverToCab(Long cabId, Long driverId) {
+    public CabResponse assignDriverToCab(Long cabId, DriverAssignmentRequest request) {
 
         Cab cab = cabRepository.findById(cabId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId));
 
+        Long driverId = request.getDriverId();
         User driver = validateAndGetDriverById(driverId);
 
         if (cab.getDriver() != null) {
