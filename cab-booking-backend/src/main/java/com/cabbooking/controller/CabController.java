@@ -126,4 +126,10 @@ public class CabController {
         Page<CabResponse> allCabsPage = cabService.getAllCabs(pageable);
         return ResponseEntity.ok(ApiResponse.success(allCabsPage));
     }
+
+    @DeleteMapping("/{cabid}")
+    public ResponseEntity<ApiResponse<Void>> deleteCab(@PathVariable Long cabId) {
+        cabService.deleteCab(cabId);
+        return ResponseEntity.noContent().build();
+    }
 }
