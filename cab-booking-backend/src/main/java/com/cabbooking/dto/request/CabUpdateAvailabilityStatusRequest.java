@@ -11,5 +11,5 @@ import com.cabbooking.model.Cab;
 @Data
 public class CabUpdateAvailabilityStatusRequest {
     @NotBlank(message = "Availability status cannot be blank")
-    private String status;
+    private Cab.AvailabilityStatus status;
 }
