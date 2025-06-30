@@ -2,6 +2,8 @@ package com.cabbooking.controller;
 
 import com.cabbooking.dto.request.CabRegistrationRequest;
 import com.cabbooking.dto.request.CabUpdateRequest;
+import com.cabbooking.dto.request.LocationUpdateRequest;
+import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
 import com.cabbooking.dto.response.ApiResponse;
 import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.service.CabService;
@@ -78,5 +80,10 @@ public class CabController {
     return ResponseEntity.ok(ApiResponse.success(updatedCab));
     }
 
-
+    @PatchMapping("/{cabId}/location")
+    public ResponseEntity<ApiResponse<CabResponse>> updateCabLocation(@PathVariable Long cabId,
+                                                                    @Valid @RequestBody LocationUpdateRequest request) {
+    CabResponse updatedCabLocation = cabService.updateCabLocation(cabId, request);
+    return ResponseEntity.ok(ApiResponse.success(updatedCabLocation));
+    }   
 }
