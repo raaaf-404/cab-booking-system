@@ -18,6 +18,8 @@ import com.cabbooking.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.Optional;
@@ -186,10 +188,9 @@ public class CabServiceImpl implements CabService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<CabResponse> getAllCabs() {
-        return cabRepository.findAll().stream()
-                .map(cabMapper::toCabResponse)
-                .collect(Collectors.toList());
+    public Page<CabResponse> getAllCabs(Pageable pageable) {
+        Page<Cab> cabsPage = cabRepository.findAll(pageable);
+        return cabsPage.map(cabMapper::toCabResponse);
     }
 
     @Transactional

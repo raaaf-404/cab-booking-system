@@ -9,6 +9,8 @@ import com.cabbooking.model.Cab.AvailabilityStatus;
 import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.dto.request.CabUpdateRequest;
 import com.cabbooking.dto.request.DriverAssignmentRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -33,7 +35,7 @@ public interface CabService {
 
     List<CabResponse> findAvailableCabs(Cab.VehicleType vehicleType);
 
-    List<CabResponse> getAllCabs();
+    Page<CabResponse> getAllCabs(Pageable pageable);
     
     void deleteCab(Long cabId);
 }

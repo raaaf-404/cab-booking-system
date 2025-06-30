@@ -121,7 +121,9 @@ public class CabController {
         return ResponseEntity.ok(ApiResponse.success(availableCabs));
     }
 
-    
-
-    
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<CabResponse>>> getAllCabs(Pageable pageable) {
+        Page<CabResponse> allCabsPage = cabService.getAllCabs(pageable);
+        return ResponseEntity.ok(ApiResponse.success(allCabsPage));
+    }
 }
