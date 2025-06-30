@@ -85,5 +85,12 @@ public class CabController {
                                                                     @Valid @RequestBody LocationUpdateRequest request) {
     CabResponse updatedCabLocation = cabService.updateCabLocation(cabId, request);
     return ResponseEntity.ok(ApiResponse.success(updatedCabLocation));
-    }   
+    }
+    
+    @PatchMapping("{cabId}/cab-availability-status")
+    public ResponseEntity<ApiResponse<CabResponse>> updateCabAvailabilityStatus(@PathVariable Long cabId,
+                                                                                @RequestBody CabUpdateAvailabilityStatusRequest request) {
+    CabResponse updatedCabStatus = cabService.updateCabAvailabilityStatus(cabId, request);
+    return ResponseEntity.ok(ApiResponse.success(updatedCabStatus));
+    }
 }
