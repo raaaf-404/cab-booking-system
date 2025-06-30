@@ -4,8 +4,10 @@ import com.cabbooking.dto.request.CabRegistrationRequest;
 import com.cabbooking.dto.request.CabUpdateRequest;
 import com.cabbooking.dto.request.LocationUpdateRequest;
 import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
+import com.cabbooking.dto.request.DriverAssignmentRequest;
 import com.cabbooking.dto.response.ApiResponse;
 import com.cabbooking.dto.response.CabResponse;
+import com.cabbooking.model.Cab;
 import com.cabbooking.service.CabService;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
@@ -13,6 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
+import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("api/v1/cabs")
@@ -88,9 +93,43 @@ public class CabController {
     }
     
     @PatchMapping("{cabId}/cab-availability-status")
-    public ResponseEntity<ApiResponse<CabResponse>> updateCabAvailabilityStatus(@PathVariable Long cabId,
-                                                                                @RequestBody CabUpdateAvailabilityStatusRequest request) {
+    public ResponseEntity<ApiResponse<CabResponse>> updateCabAvailabilityStatus(
+           @PathVariable Long cabId,
+           @Valid @RequestBody CabUpdateAvailabilityStatusRequest request) {
     CabResponse updatedCabStatus = cabService.updateCabAvailabilityStatus(cabId, request);
     return ResponseEntity.ok(ApiResponse.success(updatedCabStatus));
+    }
+
+    @PatchMapping("/{cabId}/assign-driver}")
+    public ResponseEntity<ApiResponse<CabResponse>> assignDriverToCab(
+           @PathVariable Long cabId,
+           @Valid @RequestBody DriverAssignmentRequest request) {
+    CabResponse assignedCab = cabService.assignDriverToCab(cabId, request);
+    return ResponseEntity.ok(ApiResponse.success(assignedCab));
+    }
+
+    @PatchMapping("{cabId}/remove-driver")
+    public ResponseEntity<ApiResponse<CabResponse>> removeDriverFromCab(@PathVariable Long cabId) {
+        CabResponse removedCabDriver = cabService.removeDriverFromCab(cabId);
+        return ResponseEntity.ok(ApiResponse.success(removedCabDriver));
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<ApiResponse<List<CabResponse>>> findAvailableCabs(
+            @RequestParam(required = false) Cab.VehicleType vehicleType) {
+        List<CabResponse> availableCabs = cabService.findAvailableCabs(vehicleType);
+        return ResponseEntity.ok(ApiResponse.success(availableCabs));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<CabResponse>>> getAllCabs(Pageable pageable) {
+        Page<CabResponse> allCabsPage = cabService.getAllCabs(pageable);
+        return ResponseEntity.ok(ApiResponse.success(allCabsPage));
+    }
+
+    @DeleteMapping("/{cabid}")
+    public ResponseEntity<ApiResponse<Void>> deleteCab(@PathVariable Long cabId) {
+        cabService.deleteCab(cabId);
+        return ResponseEntity.noContent().build();
     }
 }
