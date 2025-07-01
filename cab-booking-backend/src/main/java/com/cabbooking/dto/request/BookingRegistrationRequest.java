@@ -2,11 +2,15 @@ package com.cabbooking.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class BookingRegistrationRequest {
 
     @NotNull(message = "Passenger ID is required" )
