@@ -107,7 +107,28 @@ class BookingServiceImplTest {
         bookingResponse.setPickupLocation("Point A");
         bookingResponse.setDropoffLocation("Point B");
         bookingResponse.setStatus(Booking.BookingStatus.CONFIRMED.toString());
-
     }
 
+    void whenCreateBooking_withValidData_thenReturnsBookingResponse() {
+        // Arrange
+        // Note: We need a 'passenger' user object, which is created in our setUp()
+        User passengerUser = new User();
+        passengerUser.setId(1L); 
+        
+        given(userRepository.findById(1L)).willReturn(Optional.of(passengerUser));
+        // The mapper will convert the request to the 'booking' entity
+        given(bookingMapper.toBookingEntity(any(BookingRegistrationRequest.class))).willReturn(booking);
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // The mapper will convert the 'booking' entity to the response
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+    
+        // Act
+        // Call the correct method: createBooking
+        BookingResponse savedBooking = bookingService.createBooking(bookingRequest);
+    
+        // Assert
+        assertThat(savedBooking).isNotNull();
+        assertThat(savedBooking.getId()).isEqualTo(booking.getId());
+        assertThat(savedBooking.getPickupLocation()).isEqualTo("Point A");
+    }
 }
