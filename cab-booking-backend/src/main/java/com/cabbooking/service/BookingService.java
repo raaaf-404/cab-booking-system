@@ -5,13 +5,12 @@ import com.cabbooking.dto.response.BookingResponse;
 import com.cabbooking.model.Booking;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface BookingService {
 
     BookingResponse createBooking(BookingRegistrationRequest request);
 
-    Optional<BookingResponse> getBookingById(Long bookingId);
+    BookingResponse getBookingById(Long bookingId);
 
     List<BookingResponse> getBookingsByPassengerId(Long passengerId);
 

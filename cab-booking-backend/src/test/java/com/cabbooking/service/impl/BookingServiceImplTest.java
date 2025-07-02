@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -107,7 +108,84 @@ class BookingServiceImplTest {
         bookingResponse.setPickupLocation("Point A");
         bookingResponse.setDropoffLocation("Point B");
         bookingResponse.setStatus(Booking.BookingStatus.CONFIRMED.toString());
+    }
 
+    @Test
+    @DisplayName("Test Create Booking with valid data should succeed")
+    void whenCreateBooking_withValidData_thenReturnsBookingResponse() {
+        // Arrange
+        // Note: We need a 'passenger' user object, which is created in our setUp()
+        User passengerUser = new User();
+        passengerUser.setId(1L); 
+        
+        given(userRepository.findById(1L)).willReturn(Optional.of(passengerUser));
+        // The mapper will convert the request to the 'booking' entity
+        given(bookingMapper.toBookingEntity(any(BookingRegistrationRequest.class))).willReturn(booking);
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // The mapper will convert the 'booking' entity to the response
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+    
+        // Act
+        // Call the correct method: createBooking
+        BookingResponse savedBooking = bookingService.createBooking(bookingRequest);
+    
+        // Assert
+        assertThat(savedBooking).isNotNull();
+        assertThat(savedBooking.getId()).isEqualTo(booking.getId());
+        assertThat(savedBooking.getPickupLocation()).isEqualTo("Point A");
+    }
+
+    @Test
+    @DisplayName("Test Create Booking with invalid user ID should fail")
+    void whenCreateBooking_withInvalidUserId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    // We tell the repository to find nothing for the given ID
+    given(userRepository.findById(bookingRequest.getPassengerId())).willReturn(Optional.empty());
+
+    // Act & Assert
+    // We expect the service to throw a ResourceNotFoundException
+    assertThrows(ResourceNotFoundException.class, () -> {
+        bookingService.createBooking(bookingRequest);
+    });
+
+    // Verify that no mapping or saving occurred
+    verify(bookingMapper, never()).toBookingEntity(any());
+    verify(bookingRepository, never()).save(any());
+   }
+
+   @Test
+   @DisplayName("Test Get Booking By valid ID should return booking")
+   void whenGetBookingById_withValidId_thenReturnsBookingResponse() {
+    // Arrange
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    // The method now returns a direct BookingResponse object
+    BookingResponse foundBooking = bookingService.getBookingById(1L);
+
+    // Assert
+    // We can now assert directly on the returned object
+    assertThat(foundBooking).isNotNull();
+    assertThat(foundBooking.getId()).isEqualTo(1L);
+    assertThat(foundBooking.getPassenger().getName()).isEqualTo("Passenger Pete");
+   }
+
+    @Test
+    @DisplayName("Test Get Booking By invalid ID should throw ResourceNotFoundException")
+    void whenGetBookingById_withInvalidId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    // Mock the repository to return an empty Optional, simulating a not-found scenario
+    given(bookingRepository.findById(1L)).willReturn(Optional.empty());
+
+    // Act & Assert
+    // Verify that calling the method now throws the expected exception
+    assertThrows(ResourceNotFoundException.class, () -> {
+        bookingService.getBookingById(1L);
+    });
+
+    // Also, verify the mapper was never used, as the process fails before mapping
+    verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
     }
 
 }

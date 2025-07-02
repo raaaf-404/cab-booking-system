@@ -9,6 +9,7 @@ import com.cabbooking.model.User.Role;
 import com.cabbooking.model.Cab;
 import com.cabbooking.model.User;
 import com.cabbooking.repository.BookingRepository;
+import com.cabbooking.mapper.BookingMapper;
 import com.cabbooking.repository.UserRepository;
 import com.cabbooking.repository.CabRepository;
 import com.cabbooking.service.BookingService;
@@ -23,9 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import com.cabbooking.mapper.UserMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -33,39 +32,9 @@ public class BookingServiceImpl implements BookingService {
     
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    private final BookingMapper bookingMapper;
     private final CabRepository cabRepository;
     private final CabService cabService;
-
-    private BookingResponse convertToBookingResponse(Booking booking) {
-        if (booking == null) {
-            return null;
-        }
-        BookingResponse response = new BookingResponse();
-        response.setId(booking.getId());
-        response.setPassenger(userMapper.mapToUserResponse(booking.getPassenger())); // Use injected mapper
-        response.setDriver(userMapper.mapToUserResponse(booking.getDriver()));    // Use injected mapper
-        response.setPickupLocation(booking.getPickupLocation());
-        response.setDropoffLocation(booking.getDropoffLocation());
-        response.setPickupLatitude(booking.getPickupLatitude());
-        response.setPickupLongitude(booking.getPickupLongitude());
-        response.setDropoffLatitude(booking.getDropoffLatitude());
-        response.setDropoffLongitude(booking.getDropoffLongitude());
-        response.setDistance(booking.getDistance());
-        response.setFare(booking.getFare());
-        if (booking.getStatus() != null) {
-            response.setStatus(booking.getStatus().name());
-        }
-        response.setScheduledTime(booking.getScheduledTime());
-        response.setCreatedAt(booking.getCreatedAt());
-        response.setUpdatedAt(booking.getUpdatedAt());
-        response.setStartTime(booking.getStartTime());
-        response.setEndTime(booking.getEndTime());
-        response.setPaymentStatus(booking.isPaymentStatus());
-        response.setPaymentId(booking.getPaymentId());
-        response.setNotes(booking.getNotes());
-        return response;
-    }
 
     @Override
     @Transactional
@@ -89,13 +58,14 @@ public class BookingServiceImpl implements BookingService {
         booking.setUpdatedAt(LocalDateTime.now());
 
         Booking savedBooking = bookingRepository.save(booking);
-        return convertToBookingResponse(savedBooking);
+        return bookingMapper.toBookingResponse(savedBooking);
     }
 
     @Override
-    public Optional<BookingResponse> getBookingById(Long bookingId) {
+    public BookingResponse getBookingById(Long bookingId) {
         return bookingRepository.findById(bookingId)
-                .map(this::convertToBookingResponse);
+                .map(bookingMapper::toBookingResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
     }
 
     @Override
@@ -104,7 +74,7 @@ public class BookingServiceImpl implements BookingService {
             throw new ResourceNotFoundException("Passenger not found with id: " + passengerId);
         }
         return bookingRepository.findByPassengerId(passengerId).stream()
-                .map(this::convertToBookingResponse)
+                .map(bookingMapper::toBookingResponse)
                 .collect(Collectors.toList());
     }
 
@@ -114,7 +84,7 @@ public class BookingServiceImpl implements BookingService {
             throw new ResourceNotFoundException("Driver not found with id: " + driverId);
         }
         return bookingRepository.findByDriverId(driverId).stream()
-                .map(this::convertToBookingResponse)
+                .map(bookingMapper::toBookingResponse)
                 .collect(Collectors.toList());
     }
 
@@ -189,7 +159,7 @@ public class BookingServiceImpl implements BookingService {
             }
        });
     }
-    return convertToBookingResponse(bookingRepository.save(booking));
+    return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
 
     @Override
@@ -228,7 +198,7 @@ public class BookingServiceImpl implements BookingService {
         cabService.updateCabAvailabilityStatus(cab.getId(), statusRequest);
       
         //Return BookingResponse
-        return convertToBookingResponse(bookingRepository.save(booking));
+        return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
 
     @Override
@@ -273,7 +243,7 @@ public class BookingServiceImpl implements BookingService {
             });
        }
 
-        return convertToBookingResponse(bookingRepository.save(booking));
+        return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
 
     @Override
@@ -292,7 +262,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(Booking.BookingStatus.IN_PROGRESS);
         booking.setStartTime(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
-        return convertToBookingResponse(bookingRepository.save(booking));
+        return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
 
     @Override
@@ -322,7 +292,7 @@ public class BookingServiceImpl implements BookingService {
         cabService.updateCabAvailabilityStatus(cab.getId(), statusRequest);
         });
         
-        return convertToBookingResponse(bookingRepository.save(booking));
+        return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
 
     @Override
@@ -336,7 +306,7 @@ public class BookingServiceImpl implements BookingService {
             booking.setPaymentId(paymentId);
         }
         booking.setUpdatedAt(LocalDateTime.now());
-        return convertToBookingResponse(bookingRepository.save(booking));
+        return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
 
     @Override
@@ -345,7 +315,7 @@ public class BookingServiceImpl implements BookingService {
         List<Booking.BookingStatus> statuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
         return bookingRepository.findByStatusInAndDriverIsNull(statuses)
                 .stream()
-                .map(this::convertToBookingResponse)
+                .map(bookingMapper::toBookingResponse)
                 .collect(Collectors.toList());
     }
 }
