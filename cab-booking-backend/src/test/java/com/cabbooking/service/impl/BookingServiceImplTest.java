@@ -154,22 +154,38 @@ class BookingServiceImplTest {
    }
 
    @Test
-@DisplayName("Test Get Booking By valid ID should return booking")
-void whenGetBookingById_withValidId_thenReturnsBookingResponse() {
-    // Arrange: Mock the repository and the mapper behavior
+   @DisplayName("Test Get Booking By valid ID should return booking")
+   void whenGetBookingById_withValidId_thenReturnsBookingResponse() {
+    // Arrange
     given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
     given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
-    // Act: Call the service method
-    Optional<BookingResponse> foundBookingOptional = bookingService.getBookingById(1L);
+    // Act
+    // The method now returns a direct BookingResponse object
+    BookingResponse foundBooking = bookingService.getBookingById(1L);
 
-    // Assert: Verify the Optional and its content
-    assertThat(foundBookingOptional).isPresent();
-    foundBookingOptional.ifPresent(foundBooking -> {
-        assertThat(foundBooking.getId()).isEqualTo(1L);
-        assertThat(foundBooking.getPassenger().getName()).isEqualTo("Passenger Pete");
+    // Assert
+    // We can now assert directly on the returned object
+    assertThat(foundBooking).isNotNull();
+    assertThat(foundBooking.getId()).isEqualTo(1L);
+    assertThat(foundBooking.getPassenger().getName()).isEqualTo("Passenger Pete");
+   }
+
+    @Test
+    @DisplayName("Test Get Booking By invalid ID should throw ResourceNotFoundException")
+    void whenGetBookingById_withInvalidId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    // Mock the repository to return an empty Optional, simulating a not-found scenario
+    given(bookingRepository.findById(1L)).willReturn(Optional.empty());
+
+    // Act & Assert
+    // Verify that calling the method now throws the expected exception
+    assertThrows(ResourceNotFoundException.class, () -> {
+        bookingService.getBookingById(1L);
     });
-}
 
-    
+    // Also, verify the mapper was never used, as the process fails before mapping
+    verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
+    }
+
 }
