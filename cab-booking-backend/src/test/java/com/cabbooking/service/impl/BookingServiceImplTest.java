@@ -152,4 +152,24 @@ class BookingServiceImplTest {
     verify(bookingMapper, never()).toBookingEntity(any());
     verify(bookingRepository, never()).save(any());
    }
+
+   @Test
+@DisplayName("Test Get Booking By valid ID should return booking")
+void whenGetBookingById_withValidId_thenReturnsBookingResponse() {
+    // Arrange: Mock the repository and the mapper behavior
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act: Call the service method
+    Optional<BookingResponse> foundBookingOptional = bookingService.getBookingById(1L);
+
+    // Assert: Verify the Optional and its content
+    assertThat(foundBookingOptional).isPresent();
+    foundBookingOptional.ifPresent(foundBooking -> {
+        assertThat(foundBooking.getId()).isEqualTo(1L);
+        assertThat(foundBooking.getPassenger().getName()).isEqualTo("Passenger Pete");
+    });
+}
+
+    
 }
