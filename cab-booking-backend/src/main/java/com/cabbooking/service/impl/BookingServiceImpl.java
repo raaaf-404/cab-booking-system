@@ -23,9 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import com.cabbooking.mapper.UserMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -63,9 +61,10 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public Optional<BookingResponse> getBookingById(Long bookingId) {
+    public BookingResponse getBookingById(Long bookingId) {
         return bookingRepository.findById(bookingId)
-                .map(bookingMapper::toBookingResponse);
+                .map(bookingMapper::toBookingResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
     }
 
     @Override
