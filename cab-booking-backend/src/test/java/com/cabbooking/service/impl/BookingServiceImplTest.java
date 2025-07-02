@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -109,6 +110,8 @@ class BookingServiceImplTest {
         bookingResponse.setStatus(Booking.BookingStatus.CONFIRMED.toString());
     }
 
+    @Test
+    @DisplayName("Test Create Booking with valid data should succeed")
     void whenCreateBooking_withValidData_thenReturnsBookingResponse() {
         // Arrange
         // Note: We need a 'passenger' user object, which is created in our setUp()
@@ -131,4 +134,22 @@ class BookingServiceImplTest {
         assertThat(savedBooking.getId()).isEqualTo(booking.getId());
         assertThat(savedBooking.getPickupLocation()).isEqualTo("Point A");
     }
+
+    @Test
+    @DisplayName("Test Create Booking with invalid user ID should fail")
+    void whenCreateBooking_withInvalidUserId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    // We tell the repository to find nothing for the given ID
+    given(userRepository.findById(bookingRequest.getPassengerId())).willReturn(Optional.empty());
+
+    // Act & Assert
+    // We expect the service to throw a ResourceNotFoundException
+    assertThrows(ResourceNotFoundException.class, () -> {
+        bookingService.createBooking(bookingRequest);
+    });
+
+    // Verify that no mapping or saving occurred
+    verify(bookingMapper, never()).toBookingEntity(any());
+    verify(bookingRepository, never()).save(any());
+   }
 }
