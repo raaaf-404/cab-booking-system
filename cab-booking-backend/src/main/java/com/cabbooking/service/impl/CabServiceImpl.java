@@ -4,6 +4,9 @@ import com.cabbooking.service.CabService;
 import com.cabbooking.repository.CabRepository;
 import com.cabbooking.dto.request.CabRegistrationRequest;
 import com.cabbooking.dto.request.CabUpdateRequest;
+import com.cabbooking.dto.request.DriverAssignmentRequest;
+import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
+import com.cabbooking.dto.request.LocationUpdateRequest;
 import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.model.Cab;
 import com.cabbooking.repository.UserRepository;
@@ -15,6 +18,8 @@ import com.cabbooking.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.Optional;
@@ -102,10 +107,11 @@ public class CabServiceImpl implements CabService {
 
     @Transactional
     @Override
-    public CabResponse updateCabLocation(Long cabId, Double latitude, Double longitude) {
+    public CabResponse updateCabLocation(Long cabId, LocationUpdateRequest request) {
         Cab cab = cabRepository.findById(cabId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId));
-        cab.updateLocation(latitude, longitude);
+                
+        cab.updateLocation(request.getLatitude(), request.getLongitude());
 
         Cab updatedCab = cabRepository.save(cab);
         return cabMapper.toCabResponse(updatedCab);
@@ -113,22 +119,23 @@ public class CabServiceImpl implements CabService {
 
     @Transactional
     @Override
-    public CabResponse updateCabAvailabilityStatus(Long cabId, Cab.AvailabilityStatus status) {
+    public CabResponse updateCabAvailabilityStatus(Long cabId, CabUpdateAvailabilityStatusRequest request) {
         Cab cab = cabRepository.findById(cabId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId));
 
-        cab.updateAvailabilityStatus(status);
+        cab.updateAvailabilityStatus(request.getStatus());
         Cab updatedCab = cabRepository.save(cab);
         return cabMapper.toCabResponse(updatedCab);
     }
 
     @Transactional
     @Override
-    public CabResponse assignDriverToCab(Long cabId, Long driverId) {
+    public CabResponse assignDriverToCab(Long cabId, DriverAssignmentRequest request) {
 
         Cab cab = cabRepository.findById(cabId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId));
 
+        Long driverId = request.getDriverId();
         User driver = validateAndGetDriverById(driverId);
 
         if (cab.getDriver() != null) {
@@ -181,10 +188,9 @@ public class CabServiceImpl implements CabService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<CabResponse> getAllCabs() {
-        return cabRepository.findAll().stream()
-                .map(cabMapper::toCabResponse)
-                .collect(Collectors.toList());
+    public Page<CabResponse> getAllCabs(Pageable pageable) {
+        Page<Cab> cabsPage = cabRepository.findAll(pageable);
+        return cabsPage.map(cabMapper::toCabResponse);
     }
 
     @Transactional

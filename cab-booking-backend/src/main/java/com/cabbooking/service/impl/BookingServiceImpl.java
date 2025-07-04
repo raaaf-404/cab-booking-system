@@ -1,6 +1,7 @@
 package com.cabbooking.service.impl;
 
 import com.cabbooking.dto.request.BookingRegistrationRequest;
+import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
 import com.cabbooking.dto.response.BookingResponse;
 import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.model.Booking;
@@ -133,7 +134,6 @@ public class BookingServiceImpl implements BookingService {
                 }
            });
         }
-
         return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
 
@@ -168,7 +168,9 @@ public class BookingServiceImpl implements BookingService {
         booking.setUpdatedAt(LocalDateTime.now());
 
         //Update Cab Status
-        cabService.updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.BOOKED);
+        CabUpdateAvailabilityStatusRequest statusRequest = new CabUpdateAvailabilityStatusRequest();
+        statusRequest.setStatus(Cab.AvailabilityStatus.BOOKED);
+        cabService.updateCabAvailabilityStatus(cab.getId(), statusRequest);
       
         //Return BookingResponse
         return bookingMapper.toBookingResponse(bookingRepository.save(booking));
@@ -210,7 +212,9 @@ public class BookingServiceImpl implements BookingService {
        User driver = booking.getDriver();
        if (driver != null) {
             cabRepository.findByDriver(driver).ifPresent(cab -> {
-                cabService.updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.AVAILABLE);
+                CabUpdateAvailabilityStatusRequest statusRequest = new CabUpdateAvailabilityStatusRequest();
+                statusRequest.setStatus(Cab.AvailabilityStatus.AVAILABLE);
+                cabService.updateCabAvailabilityStatus(cab.getId(), statusRequest);
             });
        }
 
@@ -258,7 +262,9 @@ public class BookingServiceImpl implements BookingService {
 
         //Update Cab Status
         cabRepository.findByDriver(driver).ifPresent(cab -> {
-        cabService.updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.AVAILABLE);
+        CabUpdateAvailabilityStatusRequest statusRequest = new CabUpdateAvailabilityStatusRequest();
+        statusRequest.setStatus(Cab.AvailabilityStatus.AVAILABLE);
+        cabService.updateCabAvailabilityStatus(cab.getId(), statusRequest);
         });
         
         return bookingMapper.toBookingResponse(bookingRepository.save(booking));
