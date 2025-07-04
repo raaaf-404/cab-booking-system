@@ -272,4 +272,22 @@ class BookingServiceImplTest {
         .hasSize(1);
     assertThat(results.get(0).getDriver().getId()).isEqualTo(driverId);
     }
+
+    @Test
+    @DisplayName("Test Get Bookings By invalid Driver ID should throw exception")
+    void whenGetBookingsByDriverId_withInvalidId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    Long invalidDriverId = 99L;
+    // Mock the user repository to indicate the driver does not exist
+    given(userRepository.existsById(invalidDriverId)).willReturn(false);
+
+    // Act & Assert
+    // Verify that the correct exception is thrown
+    assertThrows(ResourceNotFoundException.class, () -> {
+        bookingService.getBookingsByDriverId(invalidDriverId);
+    });
+
+    // Verify the booking repository was never called because the check failed first
+    verify(bookingRepository, never()).findByDriverId(anyLong());
+    }
 }
