@@ -130,7 +130,9 @@ public class BookingServiceImpl implements BookingService {
                 }
     
                 if (newCabStatus !=null) {
-                    cabService.updateCabAvailabilityStatus(cab.getId(), newCabStatus);
+                    CabUpdateAvailabilityStatusRequest request = new CabUpdateAvailabilityStatusRequest();
+                    request.setStatus(newCabStatus);
+                    cabService.updateCabAvailabilityStatus(cab.getId(), request);
                 }
            });
         }
