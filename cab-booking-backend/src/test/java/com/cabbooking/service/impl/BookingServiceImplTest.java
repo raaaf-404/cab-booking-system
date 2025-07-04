@@ -10,6 +10,7 @@ import com.cabbooking.model.Cab;
 import com.cabbooking.model.User;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.repository.CabRepository;
+import com.cabbooking.service.CabService;
 import com.cabbooking.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +41,8 @@ class BookingServiceImplTest {
     @Mock
     private CabRepository cabRepository;
     @Mock
+    private CabService cabService;
+    @Mock
     private BookingMapper bookingMapper;
     @InjectMocks
     private BookingServiceImpl bookingService;
@@ -47,13 +50,15 @@ class BookingServiceImplTest {
     private User user;
     private Cab cab;
     private Booking booking;
+    private User passengerUser;
+    private User driverUser;
     private BookingRegistrationRequest bookingRequest;
     private BookingResponse bookingResponse;
 
     @BeforeEach
     void setUp() {
         // Arrange: Setup common objects for tests
-        User passengerUser = new User();
+        passengerUser = new User();
         passengerUser.setId(1L);
         passengerUser.setName("Passenger Pete");
         passengerUser.setEmail("pete@example.com");
@@ -188,4 +193,197 @@ class BookingServiceImplTest {
     verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
     }
 
+    @Test
+    @DisplayName("Test Get Bookings By valid Passenger ID should return booking list")
+    void whenGetBookingsByPassengerId_withValidId_thenReturnsBookingResponseList() {
+    // Arrange
+    Long passengerId = 1L;
+    // Assume the user exists
+    given(userRepository.existsById(passengerId)).willReturn(true);
+    // Mock the repository to return a list containing our test booking
+    given(bookingRepository.findByPassengerId(passengerId)).willReturn(Collections.singletonList(booking));
+    // Mock the mapper to convert the booking entity to a response DTO
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    List<BookingResponse> results = bookingService.getBookingsByPassengerId(passengerId);
+
+    // Assert
+    assertThat(results)
+        .isNotNull()
+        .hasSize(1);
+    assertThat(results.get(0).getId()).isEqualTo(bookingResponse.getId());
+    }
+
+    @Test
+    @DisplayName("Test Get Bookings By invalid Passenger ID should throw exception")
+    void whenGetBookingsByPassengerId_withInvalidId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    Long invalidPassengerId = 99L;
+    // Mock the repository to indicate the user does not exist
+    given(userRepository.existsById(invalidPassengerId)).willReturn(false);
+
+    // Act & Assert
+    // Verify that the expected exception is thrown
+    assertThrows(ResourceNotFoundException.class, () -> {
+        bookingService.getBookingsByPassengerId(invalidPassengerId);
+    });
+
+    // Verify that the booking repository was never queried, as the process failed early
+    verify(bookingRepository, never()).findByPassengerId(anyLong());
+    }
+
+    @Test
+    @DisplayName("Test Get Bookings By Passenger ID with no bookings should return empty list")
+    void whenGetBookingsByPassengerId_withNoBookings_thenReturnsEmptyList() {
+    // Arrange
+    Long passengerId = 1L;
+    // Assume the user exists
+    given(userRepository.existsById(passengerId)).willReturn(true);
+    // Mock the repository to return an empty list of bookings
+    given(bookingRepository.findByPassengerId(passengerId)).willReturn(Collections.emptyList());
+
+    // Act
+    List<BookingResponse> results = bookingService.getBookingsByPassengerId(passengerId);
+
+    // Assert
+    // Verify that the returned list is not null but is empty
+    assertThat(results)
+        .isNotNull()
+        .isEmpty();
+        
+    // Verify the mapper was never called since there was nothing to map
+    verify(bookingMapper, never()).toBookingResponse(any());
+    }
+
+    @Test
+    @DisplayName("Test Get Bookings By valid Driver ID should return booking list")
+    void whenGetBookingsByDriverId_withValidId_thenReturnsBookingResponseList() {
+    // Arrange
+    Long driverId = 2L; // Using the driver's ID from our setUp method
+    // Assume the driver user exists
+    given(userRepository.existsById(driverId)).willReturn(true);
+    // Mock the repository to return a list with our test booking
+    given(bookingRepository.findByDriverId(driverId)).willReturn(Collections.singletonList(booking));
+    // Mock the mapper to handle the conversion
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    List<BookingResponse> results = bookingService.getBookingsByDriverId(driverId);
+
+    // Assert
+    assertThat(results)
+        .isNotNull()
+        .hasSize(1);
+    assertThat(results.get(0).getDriver().getId()).isEqualTo(driverId);
+    }
+
+    @Test
+    @DisplayName("Test Get Bookings By invalid Driver ID should throw exception")
+    void whenGetBookingsByDriverId_withInvalidId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    Long invalidDriverId = 99L;
+    // Mock the user repository to indicate the driver does not exist
+    given(userRepository.existsById(invalidDriverId)).willReturn(false);
+
+    // Act & Assert
+    // Verify that the correct exception is thrown
+    assertThrows(ResourceNotFoundException.class, () -> {
+        bookingService.getBookingsByDriverId(invalidDriverId);
+    });
+
+    // Verify the booking repository was never called because the check failed first
+    verify(bookingRepository, never()).findByDriverId(anyLong());
+    }
+
+    @Test
+    @DisplayName("Test Get Bookings By Driver ID with no bookings should return empty list")
+    void whenGetBookingsByDriverId_withNoBookings_thenReturnsEmptyList() {
+    // Arrange
+    Long driverId = 2L;
+    // Assume the driver user exists
+    given(userRepository.existsById(driverId)).willReturn(true);
+    // Mock the booking repository to return an empty list
+    given(bookingRepository.findByDriverId(driverId)).willReturn(Collections.emptyList());
+
+    // Act
+    List<BookingResponse> results = bookingService.getBookingsByDriverId(driverId);
+
+    // Assert
+    // Verify the list is not null and is empty
+    assertThat(results)
+        .isNotNull()
+        .isEmpty();
+
+    // Verify the mapper was never called since there were no bookings to map
+    verify(bookingMapper, never()).toBookingResponse(any());
+    }
+
+    @Test
+    @DisplayName("Test Update Status to IN_PROGRESS should update cab to IN_RIDE")
+    void whenUpdateStatus_toInProgress_thenUpdatesCabStatus() {
+    // Arrange
+    // Ensure the booking has a driver so the cab logic is triggered
+    booking.setDriver(driverUser); 
+    
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    bookingService.updateBookingStatus(1L, Booking.BookingStatus.IN_PROGRESS);
+
+    // Assert
+    // Verify the booking's status was set correctly
+    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
+    
+    // Verify the cabService was called with the correct new status for the cab
+    verify(cabService).updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.IN_RIDE);
+    verify(bookingRepository).save(booking); // Ensure the booking was saved
+    }
+
+    @Test
+    @DisplayName("Test Update Status to COMPLETED should update cab to AVAILABLE")
+    void whenUpdateStatus_toCompleted_thenUpdatesCabStatusToAvailable() {
+    // Arrange
+    booking.setDriver(driverUser);
+    
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+    
+    // Act
+    bookingService.updateBookingStatus(1L, Booking.BookingStatus.COMPLETED);
+
+    // Assert
+    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
+    
+    // Verify the cab is made available again
+    verify(cabService).updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.AVAILABLE);
+    verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    @DisplayName("Test Update Status for booking with no driver should not fail")
+    void whenUpdateStatus_withNoDriver_thenSkipsCabUpdate() {
+    // Arrange
+    // Ensure the booking has no driver
+    booking.setDriver(null); 
+    
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    bookingService.updateBookingStatus(1L, Booking.BookingStatus.CANCELLED);
+
+    // Assert
+    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.CANCELLED);
+    
+    // Verify that the cab service was NEVER called because there was no driver
+    verify(cabService, never()).updateCabAvailabilityStatus(any(), any());
+    verify(bookingRepository).save(booking);
+    }
 }
