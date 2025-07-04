@@ -250,4 +250,26 @@ class BookingServiceImplTest {
     // Verify the mapper was never called since there was nothing to map
     verify(bookingMapper, never()).toBookingResponse(any());
     }
+
+    @Test
+    @DisplayName("Test Get Bookings By valid Driver ID should return booking list")
+    void whenGetBookingsByDriverId_withValidId_thenReturnsBookingResponseList() {
+    // Arrange
+    Long driverId = 2L; // Using the driver's ID from our setUp method
+    // Assume the driver user exists
+    given(userRepository.existsById(driverId)).willReturn(true);
+    // Mock the repository to return a list with our test booking
+    given(bookingRepository.findByDriverId(driverId)).willReturn(Collections.singletonList(booking));
+    // Mock the mapper to handle the conversion
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    List<BookingResponse> results = bookingService.getBookingsByDriverId(driverId);
+
+    // Assert
+    assertThat(results)
+        .isNotNull()
+        .hasSize(1);
+    assertThat(results.get(0).getDriver().getId()).isEqualTo(driverId);
+    }
 }
