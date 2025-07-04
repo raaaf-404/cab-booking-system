@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -89,74 +90,51 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
+    @PreAuthorize(
+        "(hasRole('ADMIN') or " +
+        // Passenger-specific rules
+        "(#newStatus == T(com.cabbooking.model.Booking.BookingStatus).CANCELLED and " +
+        " @bookingSecurityService.isPassengerOfBooking(authentication, #bookingId)) or " +
+        // Driver-specific rules
+        "((#newStatus == T(com.cabbooking.model.Booking.BookingStatus).REJECTED or " +
+        "  #newStatus == T(com.cabbooking.model.Booking.BookingStatus).IN_PROGRESS or " +
+        "  #newStatus == T(com.cabbooking.model.Booking.BookingStatus).COMPLETED) and " +
+        " @bookingSecurityService.isDriverOfBooking(authentication, #bookingId))) and " +
+        // General state transition validation
+        "@bookingSecurityService.isValidStatusChange(#bookingId, #newStatus)"
+    )
     public BookingResponse updateBookingStatus(Long bookingId, Booking.BookingStatus newStatus) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
-            throw new AccessDeniedException("User is not authenticated");
-        }
-        Object principal = authentication.getPrincipal();
-        String authenticatedUserEmail = principal instanceof UserDetails ? ((UserDetails) principal).getUsername() : principal.toString();
-        User requestingUser = userRepository.findByEmail(authenticatedUserEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + authenticatedUserEmail));
-                
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
-
-        // Basic state transition validation
-        Booking.BookingStatus currentStatus = booking.getStatus();
-        if (currentStatus == Booking.BookingStatus.COMPLETED || currentStatus == Booking.BookingStatus.CANCELLED ) {
-            throw new IllegalStateException("Cannot update status for a booking that is already " + booking.getStatus());
-        }
-
-        boolean isAuthorized = false;
-        if (requestingUser.getRole().contains(Role.ADMIN)) {
-            isAuthorized = true;
-        } else if (requestingUser.getRole().contains(Role.USER)) {
-            // Passenger can cancel their own booking if it's in a cancellable state
-            if (booking.getPassenger() != null && booking.getPassenger().getId().equals(requestingUser.getId())) {
-                if (newStatus == Booking.BookingStatus.CANCELLED && booking.canBeCancelled()) {
-                    isAuthorized = true;
-                }
-            }
-        } else if (requestingUser.getRole().contains(Role.DRIVER)) {
-            // Driver can reject an assigned booking
-            if (newStatus == Booking.BookingStatus.REJECTED && booking.getDriver() != null && booking.getDriver().getId().equals(requestingUser.getId())) {
-                isAuthorized = true;
-            }
-        }
-
-        if (!isAuthorized) {
-            throw new AccessDeniedException("User " + requestingUser.getId() + " is not authorized to update booking " + bookingId + " from " + currentStatus + " to status " + newStatus);
-        }
 
         booking.setStatus(newStatus);
         booking.setUpdatedAt(LocalDateTime.now());
 
-       //Update cab status
-       User driver = booking.getDriver();
-       if (driver != null) {
-       cabRepository.findByDriver(driver).ifPresent(cab -> {
-            Cab.AvailabilityStatus newCabStatus = null;
-            switch(newStatus) {
-                case IN_PROGRESS:
-                newCabStatus = Cab.AvailabilityStatus.IN_RIDE;
-                    break;
-                case COMPLETED:
-                case CANCELLED:
-                case REJECTED:
-                newCabStatus = Cab.AvailabilityStatus.AVAILABLE;
-                    break;
-                default:
-                   break;
-            }
+        // Update cab status
+        User driver = booking.getDriver();
+        if (driver != null) {
+            cabRepository.findByDriver(driver).ifPresent(cab -> {
+                Cab.AvailabilityStatus newCabStatus = null;
+                switch(newStatus) {
+                    case IN_PROGRESS:
+                    newCabStatus = Cab.AvailabilityStatus.IN_RIDE;
+                        break;
+                    case COMPLETED:
+                    case CANCELLED:
+                    case REJECTED:
+                    newCabStatus = Cab.AvailabilityStatus.AVAILABLE;
+                        break;
+                    default:
+                       break;
+                }
+    
+                if (newCabStatus !=null) {
+                    cabService.updateCabAvailabilityStatus(cab.getId(), newCabStatus);
+                }
+           });
+        }
 
-            if (newCabStatus !=null) {
-                cabService.updateCabAvailabilityStatus(cab.getId(), newCabStatus);
-            }
-       });
-    }
-    return bookingMapper.toBookingResponse(bookingRepository.save(booking));
+        return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
 
     @Override
