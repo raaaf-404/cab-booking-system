@@ -342,4 +342,26 @@ class BookingServiceImplTest {
     verify(cabService).updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.IN_RIDE);
     verify(bookingRepository).save(booking); // Ensure the booking was saved
     }
+
+    @Test
+    @DisplayName("Test Update Status to COMPLETED should update cab to AVAILABLE")
+    void whenUpdateStatus_toCompleted_thenUpdatesCabStatusToAvailable() {
+    // Arrange
+    booking.setDriver(driverUser);
+    
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+    
+    // Act
+    bookingService.updateBookingStatus(1L, Booking.BookingStatus.COMPLETED);
+
+    // Assert
+    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
+    
+    // Verify the cab is made available again
+    verify(cabService).updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.AVAILABLE);
+    verify(bookingRepository).save(booking);
+    }
 }
