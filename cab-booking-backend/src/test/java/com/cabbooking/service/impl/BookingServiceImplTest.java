@@ -188,4 +188,25 @@ class BookingServiceImplTest {
     verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
     }
 
+    @Test
+    @DisplayName("Test Get Bookings By valid Passenger ID should return booking list")
+    void whenGetBookingsByPassengerId_withValidId_thenReturnsBookingResponseList() {
+    // Arrange
+    Long passengerId = 1L;
+    // Assume the user exists
+    given(userRepository.existsById(passengerId)).willReturn(true);
+    // Mock the repository to return a list containing our test booking
+    given(bookingRepository.findByPassengerId(passengerId)).willReturn(Collections.singletonList(booking));
+    // Mock the mapper to convert the booking entity to a response DTO
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    List<BookingResponse> results = bookingService.getBookingsByPassengerId(passengerId);
+
+    // Assert
+    assertThat(results)
+        .isNotNull()
+        .hasSize(1);
+    assertThat(results.get(0).getId()).isEqualTo(bookingResponse.getId());
+    }
 }
