@@ -10,6 +10,7 @@ import com.cabbooking.model.Cab;
 import com.cabbooking.model.User;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.repository.CabRepository;
+import com.cabbooking.service.CabService;
 import com.cabbooking.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +41,8 @@ class BookingServiceImplTest {
     @Mock
     private CabRepository cabRepository;
     @Mock
+    private CabService cabService;
+    @Mock
     private BookingMapper bookingMapper;
     @InjectMocks
     private BookingServiceImpl bookingService;
@@ -47,13 +50,15 @@ class BookingServiceImplTest {
     private User user;
     private Cab cab;
     private Booking booking;
+    private User passengerUser;
+    private User driverUser;
     private BookingRegistrationRequest bookingRequest;
     private BookingResponse bookingResponse;
 
     @BeforeEach
     void setUp() {
         // Arrange: Setup common objects for tests
-        User passengerUser = new User();
+        passengerUser = new User();
         passengerUser.setId(1L);
         passengerUser.setName("Passenger Pete");
         passengerUser.setEmail("pete@example.com");
@@ -292,8 +297,8 @@ class BookingServiceImplTest {
     }
 
     @Test
-@DisplayName("Test Get Bookings By Driver ID with no bookings should return empty list")
-void whenGetBookingsByDriverId_withNoBookings_thenReturnsEmptyList() {
+    @DisplayName("Test Get Bookings By Driver ID with no bookings should return empty list")
+    void whenGetBookingsByDriverId_withNoBookings_thenReturnsEmptyList() {
     // Arrange
     Long driverId = 2L;
     // Assume the driver user exists
@@ -312,5 +317,29 @@ void whenGetBookingsByDriverId_withNoBookings_thenReturnsEmptyList() {
 
     // Verify the mapper was never called since there were no bookings to map
     verify(bookingMapper, never()).toBookingResponse(any());
+    }
+
+    @Test
+    @DisplayName("Test Update Status to IN_PROGRESS should update cab to IN_RIDE")
+    void whenUpdateStatus_toInProgress_thenUpdatesCabStatus() {
+    // Arrange
+    // Ensure the booking has a driver so the cab logic is triggered
+    booking.setDriver(driverUser); 
+    
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    bookingService.updateBookingStatus(1L, Booking.BookingStatus.IN_PROGRESS);
+
+    // Assert
+    // Verify the booking's status was set correctly
+    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
+    
+    // Verify the cabService was called with the correct new status for the cab
+    verify(cabService).updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.IN_RIDE);
+    verify(bookingRepository).save(booking); // Ensure the booking was saved
     }
 }
