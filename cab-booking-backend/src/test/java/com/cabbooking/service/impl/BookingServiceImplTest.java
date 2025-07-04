@@ -364,4 +364,26 @@ class BookingServiceImplTest {
     verify(cabService).updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.AVAILABLE);
     verify(bookingRepository).save(booking);
     }
+
+    @Test
+    @DisplayName("Test Update Status for booking with no driver should not fail")
+    void whenUpdateStatus_withNoDriver_thenSkipsCabUpdate() {
+    // Arrange
+    // Ensure the booking has no driver
+    booking.setDriver(null); 
+    
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    bookingService.updateBookingStatus(1L, Booking.BookingStatus.CANCELLED);
+
+    // Assert
+    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.CANCELLED);
+    
+    // Verify that the cab service was NEVER called because there was no driver
+    verify(cabService, never()).updateCabAvailabilityStatus(any(), any());
+    verify(bookingRepository).save(booking);
+    }
 }
