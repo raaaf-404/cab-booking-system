@@ -209,4 +209,22 @@ class BookingServiceImplTest {
         .hasSize(1);
     assertThat(results.get(0).getId()).isEqualTo(bookingResponse.getId());
     }
+
+    @Test
+    @DisplayName("Test Get Bookings By invalid Passenger ID should throw exception")
+    void whenGetBookingsByPassengerId_withInvalidId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    Long invalidPassengerId = 99L;
+    // Mock the repository to indicate the user does not exist
+    given(userRepository.existsById(invalidPassengerId)).willReturn(false);
+
+    // Act & Assert
+    // Verify that the expected exception is thrown
+    assertThrows(ResourceNotFoundException.class, () -> {
+        bookingService.getBookingsByPassengerId(invalidPassengerId);
+    });
+
+    // Verify that the booking repository was never queried, as the process failed early
+    verify(bookingRepository, never()).findByPassengerId(anyLong());
+    }
 }
