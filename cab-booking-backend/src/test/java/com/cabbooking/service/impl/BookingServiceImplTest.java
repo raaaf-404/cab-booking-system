@@ -227,4 +227,27 @@ class BookingServiceImplTest {
     // Verify that the booking repository was never queried, as the process failed early
     verify(bookingRepository, never()).findByPassengerId(anyLong());
     }
+
+    @Test
+    @DisplayName("Test Get Bookings By Passenger ID with no bookings should return empty list")
+    void whenGetBookingsByPassengerId_withNoBookings_thenReturnsEmptyList() {
+    // Arrange
+    Long passengerId = 1L;
+    // Assume the user exists
+    given(userRepository.existsById(passengerId)).willReturn(true);
+    // Mock the repository to return an empty list of bookings
+    given(bookingRepository.findByPassengerId(passengerId)).willReturn(Collections.emptyList());
+
+    // Act
+    List<BookingResponse> results = bookingService.getBookingsByPassengerId(passengerId);
+
+    // Assert
+    // Verify that the returned list is not null but is empty
+    assertThat(results)
+        .isNotNull()
+        .isEmpty();
+        
+    // Verify the mapper was never called since there was nothing to map
+    verify(bookingMapper, never()).toBookingResponse(any());
+    }
 }
