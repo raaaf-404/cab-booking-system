@@ -290,4 +290,27 @@ class BookingServiceImplTest {
     // Verify the booking repository was never called because the check failed first
     verify(bookingRepository, never()).findByDriverId(anyLong());
     }
+
+    @Test
+@DisplayName("Test Get Bookings By Driver ID with no bookings should return empty list")
+void whenGetBookingsByDriverId_withNoBookings_thenReturnsEmptyList() {
+    // Arrange
+    Long driverId = 2L;
+    // Assume the driver user exists
+    given(userRepository.existsById(driverId)).willReturn(true);
+    // Mock the booking repository to return an empty list
+    given(bookingRepository.findByDriverId(driverId)).willReturn(Collections.emptyList());
+
+    // Act
+    List<BookingResponse> results = bookingService.getBookingsByDriverId(driverId);
+
+    // Assert
+    // Verify the list is not null and is empty
+    assertThat(results)
+        .isNotNull()
+        .isEmpty();
+
+    // Verify the mapper was never called since there were no bookings to map
+    verify(bookingMapper, never()).toBookingResponse(any());
+    }
 }
