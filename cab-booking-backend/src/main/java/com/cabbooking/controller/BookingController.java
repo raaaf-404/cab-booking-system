@@ -6,6 +6,8 @@ import com.cabbooking.dto.response.BookingResponse;
 import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.model.Booking;
 import com.cabbooking.service.BookingService;
+
+import io.micrometer.core.ipc.http.HttpSender.Response;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,9 +43,9 @@ public class BookingController {
      */
     @GetMapping("/{bookingId}")
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(@PathVariable Long bookingId) {
-        return bookingService.getBookingById(bookingId)
-                .map(bookingResponse -> new ResponseEntity<>(ApiResponse.success(bookingResponse), HttpStatus.OK))
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
+
+        BookingResponse booking = bookingService.getBookingById(bookingId);
+        return ResponseEntity.ok(ApiResponse.success(booking));
     }
 
        /**
