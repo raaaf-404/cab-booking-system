@@ -1,6 +1,7 @@
 package com.cabbooking.service.impl;
 
 import com.cabbooking.dto.request.BookingRegistrationRequest;
+import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
 import com.cabbooking.dto.response.BookingResponse;
 import com.cabbooking.dto.response.UserResponse;
 import com.cabbooking.exception.ResourceNotFoundException;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -46,8 +48,7 @@ class BookingServiceImplTest {
     private BookingMapper bookingMapper;
     @InjectMocks
     private BookingServiceImpl bookingService;
-
-    private User user;
+    
     private Cab cab;
     private Booking booking;
     private User passengerUser;
@@ -67,7 +68,7 @@ class BookingServiceImplTest {
         passengerUser.addRole(User.Role.USER);
     
         // 2. Create a User for the Driver
-        User driverUser = new User();
+        driverUser = new User();
         driverUser.setId(2L);
         driverUser.setName("Driver Dave");
         driverUser.setEmail("dave@example.com");
@@ -80,7 +81,7 @@ class BookingServiceImplTest {
         cab.setLicensePlateNumber("CAB-1234");
         cab.setVehicleType(Cab.VehicleType.SEDAN);
         cab.setStatus(Cab.AvailabilityStatus.AVAILABLE); // Set a realistic status for booking
-        cab.setDriver(user); // Assign the complete 'user' object as the driver
+        cab.setDriver(driverUser); // Assign the complete 'driverUser' object as the driver
         cab.setSeatingCapacity(4);
 
         booking = new Booking();
@@ -125,7 +126,6 @@ class BookingServiceImplTest {
         
         given(userRepository.findById(1L)).willReturn(Optional.of(passengerUser));
         // The mapper will convert the request to the 'booking' entity
-        given(bookingMapper.toBookingEntity(any(BookingRegistrationRequest.class))).willReturn(booking);
         given(bookingRepository.save(any(Booking.class))).willReturn(booking);
         // The mapper will convert the 'booking' entity to the response
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
@@ -322,47 +322,47 @@ class BookingServiceImplTest {
     @Test
     @DisplayName("Test Update Status to IN_PROGRESS should update cab to IN_RIDE")
     void whenUpdateStatus_toInProgress_thenUpdatesCabStatus() {
-    // Arrange
-    // Ensure the booking has a driver so the cab logic is triggered
-    booking.setDriver(driverUser); 
-    
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
-    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        // Arrange
+        booking.setDriver(driverUser);
+        given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
-    // Act
-    bookingService.updateBookingStatus(1L, Booking.BookingStatus.IN_PROGRESS);
+        // Act
+        bookingService.updateBookingStatus(1L, Booking.BookingStatus.IN_PROGRESS);
 
-    // Assert
-    // Verify the booking's status was set correctly
-    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
-    
-    // Verify the cabService was called with the correct new status for the cab
-    verify(cabService).updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.IN_RIDE);
-    verify(bookingRepository).save(booking); // Ensure the booking was saved
+        // Assert
+        assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
+
+        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> captor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.IN_RIDE);
+
+        verify(bookingRepository).save(booking);
     }
 
     @Test
     @DisplayName("Test Update Status to COMPLETED should update cab to AVAILABLE")
     void whenUpdateStatus_toCompleted_thenUpdatesCabStatusToAvailable() {
-    // Arrange
-    booking.setDriver(driverUser);
-    
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
-    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
-    
-    // Act
-    bookingService.updateBookingStatus(1L, Booking.BookingStatus.COMPLETED);
+        // Arrange
+        booking.setDriver(driverUser);
+        given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
-    // Assert
-    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
-    
-    // Verify the cab is made available again
-    verify(cabService).updateCabAvailabilityStatus(cab.getId(), Cab.AvailabilityStatus.AVAILABLE);
-    verify(bookingRepository).save(booking);
+        // Act
+        bookingService.updateBookingStatus(1L, Booking.BookingStatus.COMPLETED);
+
+        // Assert
+        assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
+
+        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> captor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
+
+        verify(bookingRepository).save(booking);
     }
 
     @Test
@@ -383,7 +383,7 @@ class BookingServiceImplTest {
     assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.CANCELLED);
     
     // Verify that the cab service was NEVER called because there was no driver
-    verify(cabService, never()).updateCabAvailabilityStatus(any(), any());
+    verify(cabService, never()).updateCabAvailabilityStatus(any(), any(CabUpdateAvailabilityStatusRequest.class));
     verify(bookingRepository).save(booking);
     }
 }
