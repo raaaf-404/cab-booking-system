@@ -460,4 +460,28 @@ class BookingServiceImplTest {
         // Verify that the booking was not saved or altered
         verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking when driver has no cab")
+    void whenAssignDriverToBooking_withDriverWithoutCab_thenThrowsResourceNotFoundException() {
+    // Arrange
+    // 1. Ensure the booking is in a PENDING state for the check to proceed
+    booking.setStatus(Booking.BookingStatus.PENDING);
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+
+    // 2. Mock a valid driver
+    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
+
+    // 3. Mock the cab repository to find no cab for the given driver
+    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
+
+    // Act & Assert
+    // The validation logic should now fail when it cannot find a cab for the driver.
+    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessage("driver with id " + driverUser.getId() + " does not have an assigned cab");
+
+    // Verify the booking was not updated
+    verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
