@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -48,7 +49,7 @@ class BookingServiceImplTest {
     private BookingMapper bookingMapper;
     @InjectMocks
     private BookingServiceImpl bookingService;
-    
+
     private Cab cab;
     private Booking booking;
     private User passengerUser;
@@ -385,5 +386,24 @@ class BookingServiceImplTest {
     // Verify that the cab service was NEVER called because there was no driver
     verify(cabService, never()).updateCabAvailabilityStatus(any(), any(CabUpdateAvailabilityStatusRequest.class));
     verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking should succeed")
+    void whenAssignDriverToBooking_withValidData_thenReturnsBookingResponse() {
+    // Arrange
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
+    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    BookingResponse updatedBooking = bookingService.assignDriverToBooking(1L, 2L);
+
+    // Assert
+    assertThat(updatedBooking).isNotNull();
+    assertThat(updatedBooking.getStatus()).isEqualTo("CONFIRMED");
+    verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), any(CabUpdateAvailabilityStatusRequest.class));
     }
 }

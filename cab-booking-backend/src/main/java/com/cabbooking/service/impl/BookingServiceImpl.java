@@ -145,7 +145,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')") // Example of securing the method
+    @PreAuthorize("hasRole('ADMIN')")
     public BookingResponse assignDriverToBooking(Long bookingId, Long driverId) {
         // Centralized validation call
         bookingSecurityService.validateDriverAssignment(bookingId, driverId);
