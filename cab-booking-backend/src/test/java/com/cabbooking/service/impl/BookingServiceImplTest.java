@@ -27,9 +27,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -48,7 +50,7 @@ class BookingServiceImplTest {
     private BookingMapper bookingMapper;
     @InjectMocks
     private BookingServiceImpl bookingService;
-    
+
     private Cab cab;
     private Booking booking;
     private User passengerUser;
@@ -385,5 +387,101 @@ class BookingServiceImplTest {
     // Verify that the cab service was NEVER called because there was no driver
     verify(cabService, never()).updateCabAvailabilityStatus(any(), any(CabUpdateAvailabilityStatusRequest.class));
     verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking should succeed")
+    void whenAssignDriverToBooking_withValidData_thenReturnsBookingResponse() {
+    // Arrange
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
+    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+    // Act
+    BookingResponse updatedBooking = bookingService.assignDriverToBooking(1L, 2L);
+
+    // Assert
+    assertThat(updatedBooking).isNotNull();
+    assertThat(updatedBooking.getStatus()).isEqualTo("CONFIRMED");
+    verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), any(CabUpdateAvailabilityStatusRequest.class));
+    }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking with invalid booking id")
+    void whenAssignDriverToBooking_withInvalidBookingId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    given(bookingRepository.findById(1L)).willReturn(Optional.empty());
+
+    // Act & Assert
+    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessageContaining("Booking not found with id: 1");
+    }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking with invalid driver id")
+    void whenAssignDriverToBooking_withInvalidDriverId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(userRepository.findById(2L)).willReturn(Optional.empty());
+
+    // Act & Assert
+    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessageContaining("Driver not found with id: 2");
+    }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking with a user who is not a driver")
+    void whenAssignDriverToBooking_withUserWhoIsNotADriver_thenThrowsIllegalArgumentException() {
+        // Arrange
+        // 1. Create a user with the 'USER' role, which is not a 'DRIVER'
+        User nonDriverUser = new User();
+        nonDriverUser.setId(2L);
+        // Assign the USER role, which is a valid, non-driver role in your system
+        nonDriverUser.setRole(Collections.singleton(User.Role.USER));
+    
+        // 2. Mock the booking repository to return a PENDING booking
+        given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        booking.setStatus(Booking.BookingStatus.PENDING); // Ensure booking is pending for the validation to proceed
+    
+        // 3. Mock the user repository to return our non-driver user
+        given(userRepository.findById(2L)).willReturn(Optional.of(nonDriverUser));
+    
+        // Act & Assert
+        // The service should now correctly identify that this user is not a driver
+        // and throw the exception from within your validateDriverAssignment method.
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("User with id 2 is not a DRIVER.");
+    
+        // Verify that the booking was not saved or altered
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking when driver has no cab")
+    void whenAssignDriverToBooking_withDriverWithoutCab_thenThrowsResourceNotFoundException() {
+    // Arrange
+    // 1. Ensure the booking is in a PENDING state for the check to proceed
+    booking.setStatus(Booking.BookingStatus.PENDING);
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+
+    // 2. Mock a valid driver
+    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
+
+    // 3. Mock the cab repository to find no cab for the given driver
+    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
+
+    // Act & Assert
+    // The validation logic should now fail when it cannot find a cab for the driver.
+    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessage("driver with id " + driverUser.getId() + " does not have an assigned cab");
+
+    // Verify the booking was not updated
+    verify(bookingRepository, never()).save(any(Booking.class));
     }
 }
