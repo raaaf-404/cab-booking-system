@@ -432,4 +432,32 @@ class BookingServiceImplTest {
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("Driver not found with id: 2");
     }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking with a user who is not a driver")
+    void whenAssignDriverToBooking_withUserWhoIsNotADriver_thenThrowsIllegalArgumentException() {
+        // Arrange
+        // 1. Create a user with the 'USER' role, which is not a 'DRIVER'
+        User nonDriverUser = new User();
+        nonDriverUser.setId(2L);
+        // Assign the USER role, which is a valid, non-driver role in your system
+        nonDriverUser.setRole(Collections.singleton(User.Role.USER));
+    
+        // 2. Mock the booking repository to return a PENDING booking
+        given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        booking.setStatus(Booking.BookingStatus.PENDING); // Ensure booking is pending for the validation to proceed
+    
+        // 3. Mock the user repository to return our non-driver user
+        given(userRepository.findById(2L)).willReturn(Optional.of(nonDriverUser));
+    
+        // Act & Assert
+        // The service should now correctly identify that this user is not a driver
+        // and throw the exception from within your validateDriverAssignment method.
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("User with id 2 is not a DRIVER.");
+    
+        // Verify that the booking was not saved or altered
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
