@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -405,5 +406,17 @@ class BookingServiceImplTest {
     assertThat(updatedBooking).isNotNull();
     assertThat(updatedBooking.getStatus()).isEqualTo("CONFIRMED");
     verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), any(CabUpdateAvailabilityStatusRequest.class));
+    }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking with invalid booking id")
+    void whenAssignDriverToBooking_withInvalidBookingId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    given(bookingRepository.findById(1L)).willReturn(Optional.empty());
+
+    // Act & Assert
+    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessageContaining("Booking not found with id: 1");
     }
 }
