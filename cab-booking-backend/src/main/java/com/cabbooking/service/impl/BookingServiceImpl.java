@@ -11,6 +11,7 @@ import com.cabbooking.model.User;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.mapper.BookingMapper;
 import com.cabbooking.repository.UserRepository;
+import com.cabbooking.security.BookingSecurityService;
 import com.cabbooking.repository.CabRepository;
 import com.cabbooking.service.BookingService;
 import com.cabbooking.service.CabService;
@@ -36,6 +37,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingMapper bookingMapper;
     private final CabRepository cabRepository;
     private final CabService cabService;
+    private final BookingSecurityService bookingSecurityService;
 
     @Override
     @Transactional
@@ -100,11 +102,13 @@ public class BookingServiceImpl implements BookingService {
         "((#newStatus == T(com.cabbooking.model.Booking.BookingStatus).REJECTED or " +
         "  #newStatus == T(com.cabbooking.model.Booking.BookingStatus).IN_PROGRESS or " +
         "  #newStatus == T(com.cabbooking.model.Booking.BookingStatus).COMPLETED) and " +
-        " @bookingSecurityService.isDriverOfBooking(authentication, #bookingId))) and " +
-        // General state transition validation
-        "@bookingSecurityService.isValidStatusChange(#bookingId, #newStatus)"
+        " @bookingSecurityService.isDriverOfBooking(authentication, #bookingId)))" 
+
     )
     public BookingResponse updateBookingStatus(Long bookingId, Booking.BookingStatus newStatus) {
+        
+        bookingSecurityService.validateStatusChange(bookingId, newStatus);
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
@@ -141,28 +145,19 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')") // Example of securing the method
     public BookingResponse assignDriverToBooking(Long bookingId, Long driverId) {
+        // Centralized validation call
+        bookingSecurityService.validateDriverAssignment(bookingId, driverId);
+
         //Fetch Records
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
-
-        //Validation
-        if (!driver.getRole().contains(Role.DRIVER)) { // Check if the Set<User.Role> contains the DRIVER enum constant
-            throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
-        }
-        if (booking.getStatus() != Booking.BookingStatus.PENDING) {
-             throw new IllegalStateException("Driver can only be assigned to PENDING bookings. Current status: " + booking.getStatus());
-        }
-        
-        //Validate Cab Status
         Cab cab = cabRepository.findByDriver(driver)
             .orElseThrow(() -> new ResourceNotFoundException("driver with id " + driverId + " does not have an assigned cab"));
 
-        if(cab.getStatus() != Cab.AvailabilityStatus.AVAILABLE) {
-                throw new IllegalStateException("The assigned driver is not currently available. Status: " + cab.getStatus());
-        }
 
         //Update Booking
         booking.setDriver(driver);
@@ -173,7 +168,7 @@ public class BookingServiceImpl implements BookingService {
         CabUpdateAvailabilityStatusRequest statusRequest = new CabUpdateAvailabilityStatusRequest();
         statusRequest.setStatus(Cab.AvailabilityStatus.BOOKED);
         cabService.updateCabAvailabilityStatus(cab.getId(), statusRequest);
-      
+
         //Return BookingResponse
         return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
