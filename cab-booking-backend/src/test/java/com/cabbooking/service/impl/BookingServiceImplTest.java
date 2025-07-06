@@ -419,4 +419,17 @@ class BookingServiceImplTest {
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("Booking not found with id: 1");
     }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking with invalid driver id")
+    void whenAssignDriverToBooking_withInvalidDriverId_thenThrowsResourceNotFoundException() {
+    // Arrange
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+    given(userRepository.findById(2L)).willReturn(Optional.empty());
+
+    // Act & Assert
+    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessageContaining("Driver not found with id: 2");
+    }
 }
