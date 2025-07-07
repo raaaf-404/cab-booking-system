@@ -484,4 +484,29 @@ class BookingServiceImplTest {
     // Verify the booking was not updated
     verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Assign Driver To Booking when cab is not available")
+    void whenAssignDriverToBooking_withUnavailableCab_thenThrowsIllegalStateException() {
+    // Arrange
+    // 1. Ensure the booking is PENDING to pass the initial checks
+    booking.setStatus(Booking.BookingStatus.PENDING);
+    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+
+    // 2. Mock a valid driver
+    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
+
+    // 3. Set the driver's cab to a non-available status
+    cab.setStatus(Cab.AvailabilityStatus.BOOKED);
+    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+
+    // Act & Assert
+    // The validation should now fail because the cab's status is not AVAILABLE.
+    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("The assigned driver is not currently available. Status: " + cab.getStatus());
+
+    // Verify the booking was not saved or modified
+    verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
