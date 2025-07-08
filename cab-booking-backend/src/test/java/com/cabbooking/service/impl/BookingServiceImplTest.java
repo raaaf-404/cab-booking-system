@@ -627,4 +627,38 @@ class BookingServiceImplTest {
         verify(cabRepository, never()).findByDriver(any());
         verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
     }
+
+    @Test
+    @DisplayName("Test Start Ride - Success")
+    void whenStartRide_withCorrectDriverAndConfirmedBooking_thenRideStarts() {
+        // Arrange
+        // 1. The booking is already in a 'CONFIRMED' state from the setUp method.
+        // We'll ensure the driver is correctly assigned.
+        booking.setDriver(driverUser);
+        booking.setStatus(Booking.BookingStatus.CONFIRMED);
+
+        // 2. Mock the necessary repository calls.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        bookingResponse.setStatus(Booking.BookingStatus.IN_PROGRESS.toString()); // Update response mock
+
+        // Act
+        BookingResponse rideResponse = bookingService.startRide(booking.getId(), driverUser.getId());
+
+        // Assert
+        // 1. Check the final response object.
+        assertThat(rideResponse).isNotNull();
+        assertThat(rideResponse.getStatus()).isEqualTo("IN_PROGRESS");
+
+        // 2. Capture the booking object passed to the save method to inspect its state.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        // 3. Verify the status and start time were correctly set before saving.
+        assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
+        assertThat(savedBooking.getStartTime()).isNotNull();
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
+    }
 }
