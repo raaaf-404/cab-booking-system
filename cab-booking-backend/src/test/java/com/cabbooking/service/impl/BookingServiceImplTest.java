@@ -736,4 +736,27 @@ class BookingServiceImplTest {
         // Verify the booking's state was not altered.
         verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @ParameterizedTest
+    @EnumSource(value = Booking.BookingStatus.class, names = {"PENDING", "CANCELLED", "COMPLETED", "IN_PROGRESS"})
+    @DisplayName("Test Start Ride when booking is not in a confirmed state")
+    void whenStartRide_withNonConfirmedStatus_thenThrowsIllegalStateException(Booking.BookingStatus status) {
+        // Arrange
+        // 1. Assign the correct driver, so it passes the first check.
+        booking.setDriver(driverUser);
+        // 2. Set the booking to the invalid status provided by the test parameter.
+        booking.setStatus(status);
+
+        // 3. Mock the repository to return this booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // Act & Assert
+        // Verify that the service method throws the correct exception because the status is not CONFIRMED.
+        assertThatThrownBy(() -> bookingService.startRide(booking.getId(), driverUser.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Ride can only be started for CONFIRMED bookings. Current status: " + status);
+
+        // Verify the booking's state was not altered.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
