@@ -661,4 +661,26 @@ class BookingServiceImplTest {
         assertThat(savedBooking.getStartTime()).isNotNull();
         assertThat(savedBooking.getUpdatedAt()).isNotNull();
     }
+
+    @Test
+    @DisplayName("Test Start Ride when booking does not exist")
+    void whenStartRide_withInvalidBookingId_thenThrowsResourceNotFoundException() {
+        // Arrange
+        // 1. Define a booking ID and a driver ID that will be used in the request.
+        long nonExistentBookingId = 999L;
+        long anyDriverId = 2L;
+
+        // 2. Mock the repository to return an empty Optional, simulating that no booking was found.
+        given(bookingRepository.findById(nonExistentBookingId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        // Verify that calling the service method with the invalid booking ID
+        // throws the correct exception with the expected message.
+        assertThatThrownBy(() -> bookingService.startRide(nonExistentBookingId, anyDriverId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Booking not found with id: " + nonExistentBookingId);
+
+        // Verify that no save operation was attempted.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
