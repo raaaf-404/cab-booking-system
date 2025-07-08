@@ -590,4 +590,41 @@ class BookingServiceImplTest {
         verify(bookingRepository, never()).save(any(Booking.class));
         verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
     }
+
+    @Test
+    @DisplayName("Test Cancel Booking when booking has no driver")
+    void whenCancelBooking_withNoDriverAssigned_thenSucceedsWithoutError() {
+        // Arrange
+        // 1. Set the booking to a cancellable state.
+        booking.setStatus(Booking.BookingStatus.PENDING);
+        // 2. Crucially, ensure no driver is assigned to this booking.
+        booking.setDriver(null);
+
+        // 3. Mock the repository to return our driverless booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        bookingResponse.setStatus(Booking.BookingStatus.CANCELLED.toString());
+
+
+        // Act
+        // Execute the cancellation. We expect this to complete without throwing an exception.
+        BookingResponse cancelledBookingResponse = bookingService.cancelBooking(booking.getId());
+
+
+        // Assert
+        // 1. Verify the booking was successfully canceled.
+        assertThat(cancelledBookingResponse).isNotNull();
+        assertThat(cancelledBookingResponse.getStatus()).isEqualTo("CANCELLED");
+
+        // 2. Verify the booking's status was updated to CANCELLED before saving.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        assertThat(bookingCaptor.getValue().getStatus()).isEqualTo(Booking.BookingStatus.CANCELLED);
+        assertThat(bookingCaptor.getValue().getDriver()).isNull();
+
+        // 3. Most importantly, verify that no attempt was made to find or update a cab.
+        verify(cabRepository, never()).findByDriver(any());
+        verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
+    }
 }
