@@ -35,6 +35,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
 @ExtendWith(MockitoExtension.class)
 class BookingServiceImplTest {
 
@@ -561,6 +564,29 @@ class BookingServiceImplTest {
                 .hasMessage("Booking not found with id: " + nonExistentBookingId);
 
         // Verify that no other interactions occurred, like trying to save.
+        verify(bookingRepository, never()).save(any(Booking.class));
+        verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Booking.BookingStatus.class, names = {"COMPLETED", "CANCELLED"})
+    @DisplayName("Test Cancel Booking when booking is in a non-cancellable state")
+    void whenCancelBooking_withNonCancellableStatus_thenThrowsIllegalStateException(Booking.BookingStatus status) {
+        // Arrange
+        // 1. Set the booking to a non-cancellable state from the test parameters.
+        // We will assume the entity's canBeCancelled() method returns false for these states.
+        booking.setStatus(status);
+
+        // 2. Mock the repository to return this booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // Act & Assert
+        // Verify that the service method throws the correct exception.
+        assertThatThrownBy(() -> bookingService.cancelBooking(booking.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Booking cannot be cancelled in its current state: " + status);
+
+        // Verify no state-changing methods were called.
         verify(bookingRepository, never()).save(any(Booking.class));
         verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
     }
