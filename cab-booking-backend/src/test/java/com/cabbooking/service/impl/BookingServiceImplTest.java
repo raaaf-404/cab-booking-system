@@ -498,5 +498,49 @@ class BookingServiceImplTest {
     verify(bookingRepository, never()).save(any(Booking.class));
     }
 
+    @Test
+    @DisplayName("Test Cancel Booking by Owner - Success")
+    void whenCancelBooking_byOwner_thenBookingIsCancelledAndCabIsAvailable() {
+        // Arrange
+        // 1. Simulate the passenger being the logged-in user
+        Authentication authentication = new UsernamePasswordAuthenticationToken(passengerUser.getEmail(), "password");
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
 
+        // 2. Define the initial state and mock repository calls
+        // The booking is 'CONFIRMED' and we assume it can be cancelled
+        booking.setStatus(Booking.BookingStatus.CONFIRMED);
+        // This is a placeholder for the real logic inside your Booking entity
+        // If you have a canBeCancelled method, you might not need to mock it if it's simple
+        // but for clarity, we can assume it returns true.
+
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(userRepository.findByEmail(passengerUser.getEmail())).willReturn(Optional.of(passengerUser));
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking); // Return the modified booking
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        // Let's ensure the response status is updated for the final check
+        bookingResponse.setStatus(Booking.BookingStatus.CANCELLED.toString());
+
+
+        // Act
+        BookingResponse cancelledBookingResponse = bookingService.cancelBooking(booking.getId());
+
+
+        // Assert
+        // 1. Check the final response
+        assertThat(cancelledBookingResponse).isNotNull();
+        assertThat(cancelledBookingResponse.getStatus()).isEqualTo("CANCELLED");
+
+        // 2. Verify the booking's state was changed to CANCELLED before saving
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        assertThat(bookingCaptor.getValue().getStatus()).isEqualTo(Booking.BookingStatus.CANCELLED);
+
+        // 3. Verify the cab's availability was updated
+        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> statusRequestCaptor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
+        assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
+    }
 }
