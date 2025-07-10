@@ -821,4 +821,29 @@ class BookingServiceImplTest {
         verify(bookingRepository, never()).save(any(Booking.class));
         verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
     }
+
+    @Test
+    @DisplayName("Test Complete Ride with incorrect driver")
+    void whenCompleteRide_withIncorrectDriver_thenThrowsIllegalStateException() {
+        // Arrange
+        // 1. Create a separate driver object to represent the unauthorized user.
+        User incorrectDriver = new User();
+        incorrectDriver.setId(101L); // Use a distinct ID.
+
+        // 2. Set the booking to its required state: IN_PROGRESS and assigned to the correct driver.
+        booking.setStatus(Booking.BookingStatus.IN_PROGRESS);
+        booking.setDriver(driverUser); // driverUser has ID 2L from setUp.
+
+        // 3. Mock the repository to return the booking when queried.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // Act & Assert
+        // Verify that calling the method with the incorrect driver's ID throws the correct exception.
+        assertThatThrownBy(() -> bookingService.completeRide(booking.getId(), incorrectDriver.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Booking not assigned to this driver or no driver assigned.");
+
+        // Verify that the booking's state was not changed and no save was attempted.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
