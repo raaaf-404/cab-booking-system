@@ -759,4 +759,43 @@ class BookingServiceImplTest {
         // Verify the booking's state was not altered.
         verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Complete Ride - Success")
+    void whenCompleteRide_withCorrectDriverAndInProgressBooking_thenRideIsCompleted() {
+        // Arrange
+        // 1. Set the booking to the required IN_PROGRESS state.
+        booking.setStatus(Booking.BookingStatus.IN_PROGRESS);
+        booking.setDriver(driverUser);
+
+        // 2. Mock the repository and service calls.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString()); // Update response mock
+
+        // Act
+        BookingResponse rideResponse = bookingService.completeRide(booking.getId(), driverUser.getId());
+
+        // Assert
+        // 1. Check the final response object.
+        assertThat(rideResponse).isNotNull();
+        assertThat(rideResponse.getStatus()).isEqualTo("COMPLETED");
+
+        // 2. Capture the booking object to verify its state before saving.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
+        assertThat(savedBooking.getEndTime()).isNotNull();
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
+
+        // 3. Verify the cab's availability was updated to AVAILABLE.
+        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> statusRequestCaptor =
+                ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
+        assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
+    }
 }
