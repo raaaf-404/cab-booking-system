@@ -896,4 +896,41 @@ class BookingServiceImplTest {
         // Verify the booking's state was not altered.
         verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Complete Ride when driver's cab is not found")
+    void whenCompleteRide_butDriverCabNotFound_thenBookingIsStillCompleted() {
+        // Arrange
+        // 1. Set the booking to its required IN_PROGRESS state with a driver.
+        booking.setStatus(Booking.BookingStatus.IN_PROGRESS);
+        booking.setDriver(driverUser);
+
+        // 2. Mock the booking repository to return our booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // 3. Critically, mock the cab repository to return empty, simulating no cab found for the driver.
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
+
+        // 4. Mock the save and map operations for a successful completion.
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString());
+
+        // Act
+        // We expect this call to succeed without throwing any exceptions.
+        BookingResponse rideResponse = bookingService.completeRide(booking.getId(), driverUser.getId());
+
+        // Assert
+        // 1. Verify the booking was successfully completed.
+        assertThat(rideResponse).isNotNull();
+        assertThat(rideResponse.getStatus()).isEqualTo("COMPLETED");
+
+        // 2. Verify the booking object was saved with the correct COMPLETED status.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        assertThat(bookingCaptor.getValue().getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
+
+        // 3. Most importantly, verify that no attempt was made to update a cab's status.
+        verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
+    }
 }
