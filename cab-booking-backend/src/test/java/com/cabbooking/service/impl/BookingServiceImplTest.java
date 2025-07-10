@@ -656,7 +656,7 @@ class BookingServiceImplTest {
         verify(bookingRepository).save(bookingCaptor.capture());
         Booking savedBooking = bookingCaptor.getValue();
 
-        // 3. Verify the status and start time were correctly set before saving.
+        // 3. Verify the status and start time we're correctly set before saving.
         assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
         assertThat(savedBooking.getStartTime()).isNotNull();
         assertThat(savedBooking.getUpdatedAt()).isNotNull();
@@ -932,5 +932,36 @@ class BookingServiceImplTest {
 
         // 3. Most importantly, verify that no attempt was made to update a cab's status.
         verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("Test Update Payment Details - Success with Payment ID")
+    void whenUpdatePaymentDetails_withValidData_thenDetailsAreUpdated() {
+        // Arrange
+        // 1. Define the payment details to be updated.
+        boolean paymentStatus = true;
+        String paymentId = "txn_12345ABCDE";
+
+        // 2. Mock the repository to return the booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+        // Act
+        BookingResponse updatedBookingResponse = bookingService.updatePaymentDetails(booking.getId(), paymentStatus, paymentId);
+
+        // Assert
+        // 1. Verify the response object is not null.
+        assertThat(updatedBookingResponse).isNotNull();
+
+        // 2. Capture the booking object passed to the save method for detailed inspection.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        // 3. Verify that the payment status, payment ID, and timestamp were correctly set.
+        assertThat(savedBooking.isPaymentStatus()).isEqualTo(paymentStatus);
+        assertThat(savedBooking.getPaymentId()).isEqualTo(paymentId);
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
     }
 }
