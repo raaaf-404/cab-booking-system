@@ -964,4 +964,35 @@ class BookingServiceImplTest {
         assertThat(savedBooking.getPaymentId()).isEqualTo(paymentId);
         assertThat(savedBooking.getUpdatedAt()).isNotNull();
     }
+
+    @Test
+    @DisplayName("Test Update Payment Details with null Payment ID")
+    void whenUpdatePaymentDetails_withNullPaymentId_thenOnlyStatusIsUpdated() {
+        // Arrange
+        // 1. Give the booking an existing payment ID to ensure it's not overwritten.
+        String originalPaymentId = "existing_txn_abcde";
+        booking.setPaymentId(originalPaymentId);
+
+        // 2. Define the new payment status. The paymentId parameter will be null.
+        boolean newPaymentStatus = true;
+
+        // 3. Mock the repository calls.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+        // Act
+        bookingService.updatePaymentDetails(booking.getId(), newPaymentStatus, null);
+
+        // Assert
+        // 1. Capture the booking object to inspect its state before saving.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        // 2. Verify the payment status was updated, but the original payment ID was preserved.
+        assertThat(savedBooking.getPaymentStatus()).isEqualTo(newPaymentStatus);
+        assertThat(savedBooking.getPaymentId()).isEqualTo(originalPaymentId);
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
+    }
 }
