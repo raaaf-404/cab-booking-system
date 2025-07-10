@@ -869,4 +869,31 @@ class BookingServiceImplTest {
         // Verify the booking's state was not altered and no save was attempted.
         verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Complete Ride when no driver is assigned")
+    void whenCompleteRide_withNoDriverAssigned_thenThrowsIllegalStateException() {
+        // Arrange
+        // 1. Set the booking to its required state for the test.
+        // It's IN_PROGRESS, so it passes the status check.
+        booking.setStatus(Booking.BookingStatus.IN_PROGRESS);
+        // 2. Crucially, ensure the driver is null.
+        booking.setDriver(null);
+
+        // 3. Mock the repository to return our booking without a driver.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // 4. Define an arbitrary driver ID for the request, as one would still be sent.
+        long anyDriverId = 2L;
+
+        // Act & Assert
+        // Verify that attempting to complete the ride throws the correct exception
+        // due to the null driver.
+        assertThatThrownBy(() -> bookingService.completeRide(booking.getId(), anyDriverId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Booking not assigned to this driver or no driver assigned.");
+
+        // Verify the booking's state was not altered.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
