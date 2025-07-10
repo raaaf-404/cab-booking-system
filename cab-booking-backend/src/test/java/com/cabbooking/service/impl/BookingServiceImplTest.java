@@ -798,4 +798,27 @@ class BookingServiceImplTest {
         verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
         assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
     }
+
+    @Test
+    @DisplayName("Test Complete Ride when booking does not exist")
+    void whenCompleteRide_withInvalidBookingId_thenThrowsResourceNotFoundException() {
+        // Arrange
+        // 1. Define a booking ID that we will pretend does not exist.
+        long nonExistentBookingId = 999L;
+        long anyDriverId = 2L;
+
+        // 2. Mock the repository to return an empty Optional for the non-existent ID.
+        given(bookingRepository.findById(nonExistentBookingId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        // Verify that calling the service with the invalid ID throws the correct exception
+        // and that the exception message is as expected.
+        assertThatThrownBy(() -> bookingService.completeRide(nonExistentBookingId, anyDriverId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Booking not found with id: " + nonExistentBookingId);
+
+        // Verify that no interactions that change state occurred.
+        verify(bookingRepository, never()).save(any(Booking.class));
+        verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
+    }
 }
