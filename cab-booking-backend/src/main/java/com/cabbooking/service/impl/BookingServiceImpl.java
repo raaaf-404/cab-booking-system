@@ -175,45 +175,29 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') or @bookingSecurityService.isPassengerOfBooking(authentication, #bookingId)")
     public BookingResponse cancelBooking(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new AccessDeniedException("You must logged in to cancel a booking");
-        }
-
-        String currentUserEmail = authentication.getName();
-        User currentUser = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email " + currentUserEmail));
-        
-         //Authorization Check:
-         // Allow cancellation if the user is an ADMIN or is the passenger who owns the booking.
-         boolean isOwner = booking.getPassenger().getId().equals(currentUser.getId());
-         boolean isAdmin = currentUser.getRole().contains(User.Role.ADMIN);
-
-         if (!isOwner && !isAdmin) {
-            throw new AccessDeniedException("You are not authorized to cancel this booking.");
-         }
-
-         //Business Rule Check:
-         // Checking if booking is in a cancellable state
-         if(!booking.canBeCancelled()) {
+        // Business Rule Check:
+        // Checking if booking is in a cancellable state
+        if (!booking.canBeCancelled()) {
             throw new IllegalStateException("Booking cannot be cancelled in its current state: " + booking.getStatus());
         }
 
         booking.setStatus(Booking.BookingStatus.CANCELLED);
         booking.setUpdatedAt(LocalDateTime.now());
-        
-       User driver = booking.getDriver();
-       if (driver != null) {
+
+        // If a driver was assigned, update the cab's status to AVAILABLE
+        User driver = booking.getDriver();
+        if (driver != null) {
             cabRepository.findByDriver(driver).ifPresent(cab -> {
                 CabUpdateAvailabilityStatusRequest statusRequest = new CabUpdateAvailabilityStatusRequest();
                 statusRequest.setStatus(Cab.AvailabilityStatus.AVAILABLE);
                 cabService.updateCabAvailabilityStatus(cab.getId(), statusRequest);
             });
-       }
+        }
 
         return bookingMapper.toBookingResponse(bookingRepository.save(booking));
     }
