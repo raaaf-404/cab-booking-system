@@ -1028,4 +1028,25 @@ class BookingServiceImplTest {
         assertThat(savedBooking.getPaymentId()).isEqualTo(originalPaymentId);
         assertThat(savedBooking.getUpdatedAt()).isNotNull();
     }
+
+    @Test
+    @DisplayName("Test Update Payment Details when booking does not exist")
+    void whenUpdatePaymentDetails_withInvalidBookingId_thenThrowsResourceNotFoundException() {
+        // Arrange
+        // 1. Define a booking ID that does not exist in the repository.
+        long nonExistentBookingId = 999L;
+
+        // 2. Mock the repository to return an empty Optional for this ID.
+        given(bookingRepository.findById(nonExistentBookingId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        // Verify that calling the service with the non-existent ID throws the correct exception
+        // with the expected message.
+        assertThatThrownBy(() -> bookingService.updatePaymentDetails(nonExistentBookingId, true, "some-id"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Booking not found with id: " + nonExistentBookingId);
+
+        // Verify that no save operation was attempted since the booking was not found.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
