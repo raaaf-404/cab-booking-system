@@ -60,7 +60,7 @@ class BookingServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        // Arrange: Setup common objects for tests
+        // Arrange: Set up common objects for tests
         passengerUser = new User();
         passengerUser.setId(1L);
         passengerUser.setName("Passenger Pete");
@@ -122,10 +122,6 @@ class BookingServiceImplTest {
     @DisplayName("Test Create Booking with valid data should succeed")
     void whenCreateBooking_withValidData_thenReturnsBookingResponse() {
         // Arrange
-        // Note: We need a 'passenger' user object, which is created in our setUp()
-        User passengerUser = new User();
-        passengerUser.setId(1L); 
-        
         given(userRepository.findById(1L)).willReturn(Optional.of(passengerUser));
         // The mapper will convert the request to the 'booking' entity
         given(bookingRepository.save(any(Booking.class))).willReturn(booking);
@@ -151,9 +147,7 @@ class BookingServiceImplTest {
 
     // Act & Assert
     // We expect the service to throw a ResourceNotFoundException
-    assertThrows(ResourceNotFoundException.class, () -> {
-        bookingService.createBooking(bookingRequest);
-    });
+    assertThrows(ResourceNotFoundException.class, () -> bookingService.createBooking(bookingRequest));
 
     // Verify that no mapping or saving occurred
     verify(bookingMapper, never()).toBookingEntity(any());
@@ -182,14 +176,12 @@ class BookingServiceImplTest {
     @DisplayName("Test Get Booking By invalid ID should throw ResourceNotFoundException")
     void whenGetBookingById_withInvalidId_thenThrowsResourceNotFoundException() {
     // Arrange
-    // Mock the repository to return an empty Optional, simulating a not-found scenario
+    // to Mock the repository to return an empty Optional, simulating a not-found scenario
     given(bookingRepository.findById(1L)).willReturn(Optional.empty());
 
     // Act & Assert
     // Verify that calling the method now throws the expected exception
-    assertThrows(ResourceNotFoundException.class, () -> {
-        bookingService.getBookingById(1L);
-    });
+    assertThrows(ResourceNotFoundException.class, () -> bookingService.getBookingById(1L));
 
     // Also, verify the mapper was never used, as the process fails before mapping
     verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
@@ -227,9 +219,7 @@ class BookingServiceImplTest {
 
     // Act & Assert
     // Verify that the expected exception is thrown
-    assertThrows(ResourceNotFoundException.class, () -> {
-        bookingService.getBookingsByPassengerId(invalidPassengerId);
-    });
+    assertThrows(ResourceNotFoundException.class, () -> bookingService.getBookingsByPassengerId(invalidPassengerId));
 
     // Verify that the booking repository was never queried, as the process failed early
     verify(bookingRepository, never()).findByPassengerId(anyLong());
@@ -290,9 +280,7 @@ class BookingServiceImplTest {
 
     // Act & Assert
     // Verify that the correct exception is thrown
-    assertThrows(ResourceNotFoundException.class, () -> {
-        bookingService.getBookingsByDriverId(invalidDriverId);
-    });
+    assertThrows(ResourceNotFoundException.class, () -> bookingService.getBookingsByDriverId(invalidDriverId));
 
     // Verify the booking repository was never called because the check failed first
     verify(bookingRepository, never()).findByDriverId(anyLong());
@@ -371,7 +359,7 @@ class BookingServiceImplTest {
     @DisplayName("Test Update Status for booking with no driver should not fail")
     void whenUpdateStatus_withNoDriver_thenSkipsCabUpdate() {
     // Arrange
-    // Ensure the booking has no driver
+    // to Ensure the booking has no driver
     booking.setDriver(null); 
     
     given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
@@ -509,4 +497,6 @@ class BookingServiceImplTest {
     // Verify the booking was not saved or modified
     verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+
 }
