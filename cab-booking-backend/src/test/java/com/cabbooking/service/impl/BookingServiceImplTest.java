@@ -846,4 +846,27 @@ class BookingServiceImplTest {
         // Verify that the booking's state was not changed and no save was attempted.
         verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @ParameterizedTest
+    @EnumSource(value = Booking.BookingStatus.class, names = {"PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"})
+    @DisplayName("Test Complete Ride when booking is not in progress")
+    void whenCompleteRide_withNonInProgressStatus_thenThrowsIllegalStateException(Booking.BookingStatus status) {
+        // Arrange
+        // 1. Assign the correct driver to pass the initial authorization check.
+        booking.setDriver(driverUser);
+        // 2. Set the booking to the invalid status provided by the test parameter.
+        booking.setStatus(status);
+
+        // 3. Mock the repository to return this booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // Act & Assert
+        // Verify that the service method throws the correct exception because the status is not IN_PROGRESS.
+        assertThatThrownBy(() -> bookingService.completeRide(booking.getId(), driverUser.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Ride can only be completed if IN_PROGRESS. Current status: " + status);
+
+        // Verify the booking's state was not altered and no save was attempted.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
