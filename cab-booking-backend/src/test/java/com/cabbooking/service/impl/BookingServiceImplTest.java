@@ -37,6 +37,7 @@ import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @ExtendWith(MockitoExtension.class)
 class BookingServiceImplTest {
@@ -991,7 +992,39 @@ class BookingServiceImplTest {
         Booking savedBooking = bookingCaptor.getValue();
 
         // 2. Verify the payment status was updated, but the original payment ID was preserved.
-        assertThat(savedBooking.getPaymentStatus()).isEqualTo(newPaymentStatus);
+        assertThat(savedBooking.isPaymentStatus()).isEqualTo(newPaymentStatus);
+        assertThat(savedBooking.getPaymentId()).isEqualTo(originalPaymentId);
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "   "})
+    @DisplayName("Test Update Payment Details with blank Payment ID")
+    void whenUpdatePaymentDetails_withBlankPaymentId_thenOnlyStatusIsUpdated(String blankPaymentId) {
+        // Arrange
+        // 1. Set an initial payment ID to ensure it is not overwritten.
+        String originalPaymentId = "existing_txn_zyxw";
+        booking.setPaymentId(originalPaymentId);
+
+        // 2. Define the new payment status to be updated.
+        boolean newPaymentStatus = false;
+
+        // 3. Mock the repository calls.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+        // Act
+        bookingService.updatePaymentDetails(booking.getId(), newPaymentStatus, blankPaymentId);
+
+        // Assert
+        // 1. Capture the booking object sent to the save method.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        // 2. Verify the status was updated, but the original payment ID remains unchanged.
+        assertThat(savedBooking.isPaymentStatus()).isEqualTo(newPaymentStatus);
         assertThat(savedBooking.getPaymentId()).isEqualTo(originalPaymentId);
         assertThat(savedBooking.getUpdatedAt()).isNotNull();
     }
