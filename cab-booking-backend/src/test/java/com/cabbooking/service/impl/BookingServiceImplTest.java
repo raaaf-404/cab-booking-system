@@ -1089,4 +1089,29 @@ class BookingServiceImplTest {
         // 3. Verify that the mapper was called for each booking found.
         verify(bookingMapper, times(2)).toBookingResponse(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Find Pending Bookings for Driver Assignment when none exist")
+    void whenFindPendingBookingsForDriverAssignment_andNoBookingsExist_thenReturnsEmptyList() {
+        // Arrange
+        // 1. Define the list of statuses the method will query for.
+        List<Booking.BookingStatus> expectedStatuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
+
+        // 2. Mock the repository to return an empty list for this specific query.
+        given(bookingRepository.findByStatusInAndDriverIsNull(expectedStatuses)).willReturn(Collections.emptyList());
+
+        // Act
+        List<BookingResponse> result = bookingService.findPendingBookingsForDriverAssignment();
+
+        // Assert
+        // 1. Verify that the result is not null and is empty.
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        // 2. Verify that the repository method was called.
+        verify(bookingRepository, times(1)).findByStatusInAndDriverIsNull(expectedStatuses);
+
+        // 3. Most importantly, verify that the mapper was never invoked since there were no bookings to map.
+        verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
+    }
 }
