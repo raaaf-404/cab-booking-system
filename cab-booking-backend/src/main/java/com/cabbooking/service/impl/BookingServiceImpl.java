@@ -266,7 +266,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingResponse> findPendingBookingsForDriverAssignment() {
+        public List<BookingResponse> findPendingBookingsForDriverAssignment() {
 
         List<Booking.BookingStatus> statuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
         return bookingRepository.findByStatusInAndDriverIsNull(statuses)

@@ -1049,4 +1049,44 @@ class BookingServiceImplTest {
         // Verify that no save operation was attempted since the booking was not found.
         verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Find Pending Bookings for Driver Assignment - Success")
+    void whenFindPendingBookingsForDriverAssignment_andBookingsExist_thenReturnsBookingResponseList() {
+        // Arrange
+        // 1. Create mock bookings that match the criteria (PENDING/CONFIRMED and no driver).
+        Booking pendingBooking = new Booking();
+        pendingBooking.setId(10L);
+        pendingBooking.setStatus(Booking.BookingStatus.PENDING);
+        pendingBooking.setDriver(null);
+
+        Booking confirmedBooking = new Booking();
+        confirmedBooking.setId(11L);
+        confirmedBooking.setStatus(Booking.BookingStatus.CONFIRMED);
+        confirmedBooking.setDriver(null);
+
+        List<Booking> mockBookings = List.of(pendingBooking, confirmedBooking);
+
+        // 2. Mock the repository to return our list when the specific query is called.
+        List<Booking.BookingStatus> expectedStatuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
+        given(bookingRepository.findByStatusInAndDriverIsNull(expectedStatuses)).willReturn(mockBookings);
+
+        // 3. Mock the mapper to return a response for any booking object.
+        // We can use a generic response since we're not testing the mapping logic itself here.
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(new BookingResponse());
+
+        // Act
+        List<BookingResponse> result = bookingService.findPendingBookingsForDriverAssignment();
+
+        // Assert
+        // 1. Verify that the result is not null and contains the correct number of items.
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+
+        // 2. Verify that the repository method was called exactly once with the correct status list.
+        verify(bookingRepository, times(1)).findByStatusInAndDriverIsNull(expectedStatuses);
+
+        // 3. Verify that the mapper was called for each booking found.
+        verify(bookingMapper, times(2)).toBookingResponse(any(Booking.class));
+    }
 }
