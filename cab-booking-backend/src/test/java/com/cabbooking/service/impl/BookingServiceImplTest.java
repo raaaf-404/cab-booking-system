@@ -1114,4 +1114,31 @@ class BookingServiceImplTest {
         // 3. Most importantly, verify that the mapper was never invoked since there were no bookings to map.
         verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Find Pending Bookings for Driver Assignment verifies correct query method is called")
+    void whenFindPendingBookingsForDriverAssignment_thenVerifiesCorrectRepositoryMethodCall() {
+        // Arrange
+        // 1. Define the exact list of statuses your service method should be querying for.
+        List<Booking.BookingStatus> expectedStatuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
+
+        // 2. We don't need to create mock bookings. We'll simply mock the repository to return an empty list
+        // for this specific query, as our primary goal is to verify the call itself.
+        given(bookingRepository.findByStatusInAndDriverIsNull(expectedStatuses)).willReturn(Collections.emptyList());
+
+        // Act
+        List<BookingResponse> result = bookingService.findPendingBookingsForDriverAssignment();
+
+        // Assert
+        // 1. First, confirm the result is what you'd expect when the repository finds nothing.
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        // 2. Most importantly, verify that the service method called the repository with the
+        // exact list of statuses we defined. This proves the filtering logic is being correctly invoked.
+        verify(bookingRepository, times(1)).findByStatusInAndDriverIsNull(expectedStatuses);
+
+        // 3. Ensure no mapping occurred.
+        verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
+    }
 }
