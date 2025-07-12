@@ -117,4 +117,27 @@ class UserServiceImplTest {
         verify(userRepository, never()).save(any(User.class));
     }
 
+    @Test
+    @DisplayName("Test registration with no roles assigns default USER role")
+    void whenRegisterUser_withNoRoles_thenAssignsDefaultUserRole() {
+        // Arrange
+        registrationRequest.setRoles(null);
+        given(userRepository.findByEmail(anyString())).willReturn(Optional.empty());
+        given(userRepository.findByPhone(anyString())).willReturn(Optional.empty());
+        given(passwordEncoder.encode(anyString())).willReturn("encodedPassword");
+        given(userRepository.save(any(User.class))).willAnswer(invocation -> {
+            User userToSave = invocation.getArgument(0);
+            assertThat(userToSave.getRole()).containsExactly(User.Role.USER);
+            return savedUser;
+        });
+        given(userMapper.mapToUserResponse(any(User.class))).willReturn(userResponse);
+
+
+        // Act
+        userService.registerUser(registrationRequest);
+
+        // Assert
+        verify(userRepository).save(any(User.class));
+    }
+
 }
