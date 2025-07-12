@@ -87,4 +87,18 @@ class UserServiceImplTest {
         assertThat(result.getEmail()).isEqualTo(registrationRequest.getEmail());
         verify(userRepository).save(any(User.class));
     }
+
+    @Test
+    @DisplayName("Test registration with existing email should throw exception")
+    void whenRegisterUser_withExistingEmail_thenThrowsUserAlreadyExistsException() {
+        // Arrange
+        given(userRepository.findByEmail(registrationRequest.getEmail())).willReturn(Optional.of(new User()));
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.registerUser(registrationRequest))
+                .isInstanceOf(UserAlreadyExistsException.class)
+                .hasMessage("User with email " + registrationRequest.getEmail() + " already exists.");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
 }
