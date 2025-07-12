@@ -101,4 +101,20 @@ class UserServiceImplTest {
 
         verify(userRepository, never()).save(any(User.class));
     }
+
+    @Test
+    @DisplayName("Test registration with existing phone should throw exception")
+    void whenRegisterUser_withExistingPhone_thenThrowsUserAlreadyExistsException() {
+        // Arrange
+        given(userRepository.findByEmail(anyString())).willReturn(Optional.empty());
+        given(userRepository.findByPhone(registrationRequest.getPhone())).willReturn(Optional.of(new User()));
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.registerUser(registrationRequest))
+                .isInstanceOf(UserAlreadyExistsException.class)
+                .hasMessage("User with phone " + registrationRequest.getPhone() + " already exists.");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
 }
