@@ -140,4 +140,27 @@ class UserServiceImplTest {
         verify(userRepository).save(any(User.class));
     }
 
+    @Test
+    @DisplayName("Test registration with specific roles assigns correct roles")
+    void whenRegisterUser_withSpecificRoles_thenAssignsCorrectRoles() {
+        // Arrange
+        registrationRequest.setRoles(Set.of("DRIVER"));
+        given(userRepository.findByEmail(anyString())).willReturn(Optional.empty());
+        given(userRepository.findByPhone(anyString())).willReturn(Optional.empty());
+        given(passwordEncoder.encode(anyString())).willReturn("encodedPassword");
+        given(userRepository.save(any(User.class))).willAnswer(invocation -> {
+            User userToSave = invocation.getArgument(0);
+            assertThat(userToSave.getRole()).containsExactly(User.Role.DRIVER);
+            savedUser.setRole(Set.of(User.Role.DRIVER));
+            return savedUser;
+        });
+        given(userMapper.mapToUserResponse(any(User.class))).willReturn(userResponse);
+
+
+        // Act
+        userService.registerUser(registrationRequest);
+
+        // Assert
+        verify(userRepository).save(any(User.class));
+    }
 }
