@@ -308,4 +308,23 @@ class UserServiceImplTest {
         // Verify that the repository's findByEmail method was called exactly once with the correct email
         verify(userRepository).findByEmail(email);
     }
+
+    @Test
+    @DisplayName("Test findByEmail with a non-existent email should return empty")
+    void whenFindByEmail_withNonExistentEmail_thenReturnsEmpty() {
+        // Arrange
+        String email = "nonexistent@example.com";
+
+        // Mocking the repository to return an empty Optional for the given email
+        given(userRepository.findByEmail(email)).willReturn(Optional.empty());
+
+        // Act
+        Optional<User> result = userService.findByEmail(email);
+
+        // Assert
+        assertThat(result).isNotPresent(); // Assert that the Optional is empty
+
+        // Verify that the repository's findByEmail method was called
+        verify(userRepository).findByEmail(email);
+    }
 }
