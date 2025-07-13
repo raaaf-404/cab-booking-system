@@ -263,4 +263,24 @@ class UserServiceImplTest {
         verify(userRepository).findById(userId);
         verify(userMapper).mapToUserResponse(foundUser);
     }
+
+    @Test
+    @DisplayName("Test getUserById with a non-existent ID should return empty")
+    void whenGetUserById_withNonExistentId_thenReturnsEmpty() {
+        // Arrange
+        Long userId = 99L; // An ID that we assume does not exist
+
+        // Mocking the repository to return an empty Optional
+        given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+        // Act
+        Optional<UserResponse> result = userService.getUserById(userId);
+
+        // Assert
+        assertThat(result).isNotPresent(); // or assertThat(result).isEmpty();
+
+        // Verify that the repository was called but the mapper was never used
+        verify(userRepository).findById(userId);
+        verify(userMapper, never()).mapToUserResponse(any(User.class));
+    }
 }
