@@ -156,6 +156,7 @@ class BookingServiceImplTest {
         void whenCreateBooking_withValidData_thenReturnsBookingResponse() {
             // Arrange
             given(userRepository.findById(bookingRequest.getPassengerId())).willReturn(Optional.of(passengerUser));
+            given(bookingMapper.toBookingEntity(bookingRequest)).willReturn(bookingPending);
             // The mapper will convert the request to the 'booking' entity
             given(bookingRepository.save(any(Booking.class))).willReturn(bookingPending);
             // The mapper will convert the 'booking' entity to the response
@@ -172,6 +173,8 @@ class BookingServiceImplTest {
             assertThat(savedBooking.getDropoffLocation()).isEqualTo("Point B");
             assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.PENDING.toString());
             assertThat(savedBooking.getDriver()).isNull();
+            
+            verify(bookingRepository, times(1)).save(any(Booking.class));
         }
 
     @Test
@@ -192,8 +195,9 @@ class BookingServiceImplTest {
     assertThat(exception.getMessage()).isEqualTo(expectedMessage);
 
     // Verify that no mapping or saving occurred
-    verify(bookingMapper, never()).toBookingEntity(any());
-    verify(bookingRepository, never()).save(any());
+    verify(bookingMapper, never()).toBookingEntity(any(BookingResponse.class));
+    verify(bookingRepository, never()).save(any(Booking.class));
+    verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
    }
 
     @Test
@@ -217,6 +221,7 @@ class BookingServiceImplTest {
 
         // Verify that the save method was attempted exactly one time
         verify(bookingRepository, times(1)).save(any(Booking.class));
+        verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
     }
 
    @Test
