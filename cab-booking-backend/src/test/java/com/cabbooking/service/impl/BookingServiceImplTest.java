@@ -57,10 +57,12 @@ class BookingServiceImplTest {
 
     private Cab cab;
     private Booking booking;
+    private Booking bookingPending;
     private User passengerUser;
     private User driverUser;
     private BookingRegistrationRequest bookingRequest;
     private BookingResponse bookingResponse;
+    private BookingResponse bookingPendingResponse;
     private User adminUser;
 
     @BeforeEach
@@ -107,6 +109,14 @@ class BookingServiceImplTest {
         booking.setDropoffLocation("Point B");
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
 
+        bookingPending = new Booking();
+        bookingPending.setId(1L);
+        bookingPending.setPassenger(passengerUser);
+        bookingPending.setDriver(null);
+        bookingPending.setPickupLocation("Point A");
+        bookingPending.setDropoffLocation("Point B");
+        bookingPending.setStatus(Booking.BookingStatus.PENDING);
+
         // The request object sent by the client
         bookingRequest = new BookingRegistrationRequest();
         bookingRequest.setPassengerId(passengerUser.getId()); // Correctly set passenger ID
@@ -120,36 +130,48 @@ class BookingServiceImplTest {
         UserResponse driverResponse = new UserResponse();
         driverResponse.setId(driverUser.getId());
         driverResponse.setName(driverUser.getName());
+
+
+        bookingPendingResponse = new BookingResponse();
+        bookingPendingResponse.setId(1L);
+        bookingPendingResponse.setPassenger(passengerResponse);
+        bookingPendingResponse.setDriver(null);
+        bookingPendingResponse.setPickupLocation("Point A");
+        bookingPendingResponse.setDropoffLocation("Point B");
+        bookingPendingResponse.setStatus(Booking.BookingStatus.PENDING.toString());
         
         // The response object sent back by the server
         bookingResponse = new BookingResponse();
         bookingResponse.setId(1L);
-        bookingResponse.setPassenger(passengerResponse); // Set the UserResponse object
-        bookingResponse.setDriver(driverResponse);       // Set the UserResponse object
+        bookingResponse.setPassenger(passengerResponse);
+        bookingResponse.setDriver(driverResponse);
         bookingResponse.setPickupLocation("Point A");
         bookingResponse.setDropoffLocation("Point B");
         bookingResponse.setStatus(Booking.BookingStatus.CONFIRMED.toString());
     }
 
-    @Test
-    @DisplayName("Test Create Booking with valid data should succeed")
-    void whenCreateBooking_withValidData_thenReturnsBookingResponse() {
-        // Arrange
-        given(userRepository.findById(1L)).willReturn(Optional.of(passengerUser));
-        // The mapper will convert the request to the 'booking' entity
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
-        // The mapper will convert the 'booking' entity to the response
-        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
-    
-        // Act
-        // Call the correct method: createBooking
-        BookingResponse savedBooking = bookingService.createBooking(bookingRequest);
-    
-        // Assert
-        assertThat(savedBooking).isNotNull();
-        assertThat(savedBooking.getId()).isEqualTo(booking.getId());
-        assertThat(savedBooking.getPickupLocation()).isEqualTo("Point A");
-    }
+        @Test
+        @DisplayName("Test Create Booking with valid data should succeed")
+        void whenCreateBooking_withValidData_thenReturnsBookingResponse() {
+            // Arrange
+            given(userRepository.findById(1L)).willReturn(Optional.of(passengerUser));
+            // The mapper will convert the request to the 'booking' entity
+            given(bookingRepository.save(any(Booking.class))).willReturn(bookingPending);
+            // The mapper will convert the 'booking' entity to the response
+            given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingPendingResponse);
+        
+            // Act
+            // Call the correct method: createBooking
+            BookingResponse savedBooking = bookingService.createBooking(bookingRequest);
+        
+            // Assert
+            assertThat(savedBooking).isNotNull();
+            assertThat(savedBooking.getId()).isEqualTo(bookingPendingResponse.getId());
+            assertThat(savedBooking.getPickupLocation()).isEqualTo("Point A");
+            assertThat(savedBooking.getDropoffLocation()).isEqualTo("Point B");
+            assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.PENDING.toString());
+            assertThat(savedBooking.getDriver()).isNull();
+        }
 
     @Test
     @DisplayName("Test Create Booking with invalid user ID should fail")
