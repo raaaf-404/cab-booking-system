@@ -38,6 +38,7 @@ import static org.mockito.Mockito.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class BookingServiceImplTest {
@@ -194,6 +195,29 @@ class BookingServiceImplTest {
     verify(bookingMapper, never()).toBookingEntity(any());
     verify(bookingRepository, never()).save(any());
    }
+
+    @Test
+    @DisplayName("Test Create Booking when database save fails")
+    void whenCreateBooking_andRepositorySaveFails_thenThrowsException() {
+        // Arrange
+        String errorMessage = "Failed to save booking";
+        given(userRepository.findById(bookingRequest.getPassengerId())).willReturn(Optional.of(passengerUser));
+        given(bookingMapper.toBookingEntity(bookingRequest)).willReturn(bookingPending);
+        given(bookingRepository.save(any(Booking.class)))
+                .willThrow(new DataIntegrityViolationException(errorMessage));
+
+        // Act & Assert
+        DataIntegrityViolationException exception = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> bookingService.createBooking(bookingRequest)
+        );
+
+        // Assert that the message is correct
+        assertThat(exception.getMessage()).isEqualTo(errorMessage);
+
+        // Verify that the save method was attempted exactly one time
+        verify(bookingRepository, times(1)).save(any(Booking.class));
+    }
 
    @Test
    @DisplayName("Test Get Booking By valid ID should return booking")
