@@ -154,7 +154,7 @@ class BookingServiceImplTest {
         @DisplayName("Test Create Booking with valid data should succeed")
         void whenCreateBooking_withValidData_thenReturnsBookingResponse() {
             // Arrange
-            given(userRepository.findById(1L)).willReturn(Optional.of(passengerUser));
+            given(userRepository.findById(bookingRequest.getPassengerId())).willReturn(Optional.of(passengerUser));
             // The mapper will convert the request to the 'booking' entity
             given(bookingRepository.save(any(Booking.class))).willReturn(bookingPending);
             // The mapper will convert the 'booking' entity to the response
@@ -182,7 +182,13 @@ class BookingServiceImplTest {
 
     // Act & Assert
     // We expect the service to throw a ResourceNotFoundException
-    assertThrows(ResourceNotFoundException.class, () -> bookingService.createBooking(bookingRequest));
+    ResourceNotFoundException exception = assertThrows(
+            ResourceNotFoundException.class,
+            () -> bookingService.createBooking(bookingRequest)
+    );
+
+    String expectedMessage = "Passenger not found with id: " + bookingRequest.getPassengerId();
+    assertThat(exception.getMessage()).isEqualTo(expectedMessage);
 
     // Verify that no mapping or saving occurred
     verify(bookingMapper, never()).toBookingEntity(any());
