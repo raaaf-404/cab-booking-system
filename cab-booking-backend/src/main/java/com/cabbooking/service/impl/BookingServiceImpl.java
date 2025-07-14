@@ -45,18 +45,10 @@ public class BookingServiceImpl implements BookingService {
         User passenger = userRepository.findById(request.getPassengerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Passenger not found with id: " + request.getPassengerId()));
 
-        Booking booking = new Booking();
+        Booking booking = bookingMapper.toBookingEntity(request);
+
         booking.setPassenger(passenger);
-        booking.setPickupLocation(request.getPickupLocation());
-        booking.setDropoffLocation(request.getDropoffLocation());
-        booking.setPickupLatitude(request.getPickupLatitude());
-        booking.setPickupLongitude(request.getPickupLongitude());
-        booking.setDropoffLatitude(request.getDropoffLatitude());
-        booking.setDropoffLongitude(request.getDropoffLongitude());
-        booking.setScheduledTime(request.getScheduledTime());
-        booking.setNotes(request.getNotes());
         booking.setStatus(Booking.BookingStatus.PENDING);
-        // Fare and distance calculation logic would typically go here or be triggered.
         booking.setCreatedAt(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
 
