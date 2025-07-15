@@ -251,14 +251,13 @@ class BookingServiceImplTest {
     @DisplayName("Test Get Booking By invalid ID should throw ResourceNotFoundException")
     void whenGetBookingById_withInvalidId_thenThrowsResourceNotFoundException() {
     // Arrange
-    // to Mock the repository to return an empty Optional, simulating a not-found scenario
-    given(bookingRepository.findById(1L)).willReturn(Optional.empty());
+    given(bookingRepository.findById(booking.getId())).willReturn(Optional.empty());
 
     // Act & Assert
-    // Verify that calling the method now throws the expected exception
-    assertThrows(ResourceNotFoundException.class, () -> bookingService.getBookingById(1L));
+    assertThrows(ResourceNotFoundException.class, () -> bookingService.getBookingById(booking.getId()));
 
-    // Also, verify the mapper was never used, as the process fails before mapping
+    //Verify
+    verify(bookingRepository, times(1)).findById(booking.getId());
     verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
     }
 
