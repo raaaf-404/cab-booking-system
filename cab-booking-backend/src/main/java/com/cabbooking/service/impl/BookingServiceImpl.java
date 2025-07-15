@@ -112,7 +112,7 @@ public class BookingServiceImpl implements BookingService {
         if (driver != null) {
             cabRepository.findByDriver(driver).ifPresent(cab -> {
                 Cab.AvailabilityStatus newCabStatus = null;
-                switch(newStatus) {
+                switch(newStatus) { 
                     case IN_PROGRESS:
                     newCabStatus = Cab.AvailabilityStatus.IN_RIDE;
                         break;
