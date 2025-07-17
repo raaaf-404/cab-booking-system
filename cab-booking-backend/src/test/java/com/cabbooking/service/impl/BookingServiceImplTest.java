@@ -331,12 +331,9 @@ class BookingServiceImplTest {
     @DisplayName("Test Get Bookings By valid Driver ID should return booking list")
     void whenGetBookingsByDriverId_withValidId_thenReturnsBookingResponseList() {
     // Arrange
-    Long driverId = 2L; // Using the driver's ID from our setUp method
-    // Assume the driver user exists
+    Long driverId = driverUser.getId();
     given(userRepository.existsById(driverId)).willReturn(true);
-    // Mock the repository to return a list with our test booking
     given(bookingRepository.findByDriverId(driverId)).willReturn(Collections.singletonList(booking));
-    // Mock the mapper to handle the conversion
     given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
     // Act
@@ -346,7 +343,16 @@ class BookingServiceImplTest {
     assertThat(results)
         .isNotNull()
         .hasSize(1);
-    assertThat(results.get(0).getDriver().getId()).isEqualTo(driverId);
+    assertThat(results.get(0).getDriver().getId()).isEqualTo(bookingResponse.getDriver().getId());
+    assertThat(results.get(0).getPickupLocation()).isEqualTo(bookingResponse.getPickupLocation());
+    assertThat(results.get(0).getDropoffLocation()).isEqualTo(bookingResponse.getDropoffLocation());
+    assertThat(results.get(0).getStatus()).isEqualTo(bookingResponse.getStatus());
+    assertThat(results.get(0).getPassenger().getId()).isEqualTo(bookingResponse.getPassenger().getId());
+
+    //Verify
+    verify(userRepository, times(1)).existsById(driverId);
+    verify(bookingRepository, times(1)).findByDriverId(driverId);
+    verify(bookingMapper, times(1)).toBookingResponse(booking);
     }
 
     @Test
