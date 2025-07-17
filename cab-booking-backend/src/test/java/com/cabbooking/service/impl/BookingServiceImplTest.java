@@ -298,7 +298,6 @@ class BookingServiceImplTest {
     given(userRepository.existsById(invalidPassengerId)).willReturn(false);
 
     // Act & Assert
-    // Verify that the expected exception is thrown
     assertThrows(ResourceNotFoundException.class, () -> bookingService.getBookingsByPassengerId(invalidPassengerId));
 
     // Verify
@@ -310,22 +309,21 @@ class BookingServiceImplTest {
     @DisplayName("Test Get Bookings By Passenger ID with no bookings should return empty list")
     void whenGetBookingsByPassengerId_withNoBookings_thenReturnsEmptyList() {
     // Arrange
-    Long passengerId = 1L;
-    // Assume the user exists
+    Long passengerId = passengerUser.getId();
     given(userRepository.existsById(passengerId)).willReturn(true);
-    // Mock the repository to return an empty list of bookings
     given(bookingRepository.findByPassengerId(passengerId)).willReturn(Collections.emptyList());
 
     // Act
     List<BookingResponse> results = bookingService.getBookingsByPassengerId(passengerId);
 
     // Assert
-    // Verify that the returned list is not null but is empty
     assertThat(results)
         .isNotNull()
         .isEmpty();
-        
-    // Verify the mapper was never called since there was nothing to map
+
+    //Verify
+    verify(userRepository, times(1)).existsById(passengerId);
+    verify(bookingRepository, times(1)).findByPassengerId(passengerId);
     verify(bookingMapper, never()).toBookingResponse(any());
     }
 
