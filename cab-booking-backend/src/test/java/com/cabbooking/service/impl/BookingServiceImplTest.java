@@ -661,4 +661,102 @@ class BookingServiceImplTest {
         assertThat(savedBooking.getStartTime()).isNotNull();
         assertThat(savedBooking.getUpdatedAt()).isNotNull();
     }
+
+    @Test
+    @DisplayName("Test Start Ride when booking does not exist")
+    void whenStartRide_withInvalidBookingId_thenThrowsResourceNotFoundException() {
+        // Arrange
+        // 1. Define a booking ID and a driver ID that will be used in the request.
+        long nonExistentBookingId = 999L;
+        long anyDriverId = 2L;
+
+        // 2. Mock the repository to return an empty Optional, simulating that no booking was found.
+        given(bookingRepository.findById(nonExistentBookingId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        // Verify that calling the service method with the invalid booking ID
+        // throws the correct exception with the expected message.
+        assertThatThrownBy(() -> bookingService.startRide(nonExistentBookingId, anyDriverId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Booking not found with id: " + nonExistentBookingId);
+
+        // Verify that no save operation was attempted.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+
+    @Test
+    @DisplayName("Test Start Ride with incorrect driver")
+    void whenStartRide_withIncorrectDriver_thenThrowsIllegalStateException() {
+        // Arrange
+        // 1. Create a second driver to represent the "incorrect" one.
+        User incorrectDriver = new User();
+        incorrectDriver.setId(99L); // A different ID from the assigned driver.
+
+        // 2. The booking from setUp is assigned to driverUser (ID 2L).
+        // Ensure it's in a CONFIRMED state.
+        booking.setDriver(driverUser);
+        booking.setStatus(Booking.BookingStatus.CONFIRMED);
+
+        // 3. Mock the repository to return the booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // Act & Assert
+        // Verify that attempting to start the ride with the incorrect driver's ID
+        // throws the expected exception.
+        assertThatThrownBy(() -> bookingService.startRide(booking.getId(), incorrectDriver.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Booking not assigned to this driver or no driver assigned.");
+
+        // Ensure the booking's state was not changed.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("Test Start Ride when no driver is assigned")
+    void whenStartRide_withNoDriverAssigned_thenThrowsIllegalStateException() {
+        // Arrange
+        // 1. Explicitly set the driver to null for this test case.
+        // The booking is CONFIRMED, so it will pass the status check.
+        booking.setDriver(null);
+        booking.setStatus(Booking.BookingStatus.CONFIRMED);
+
+        // 2. Mock the repository to return our booking without a driver.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // 3. Define an arbitrary driver ID for the request.
+        long anyDriverId = 2L;
+
+        // Act & Assert
+        // Verify that attempting to start the ride throws the correct exception.
+        assertThatThrownBy(() -> bookingService.startRide(booking.getId(), anyDriverId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Booking not assigned to this driver or no driver assigned.");
+
+        // Verify the booking's state was not altered.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Booking.BookingStatus.class, names = {"PENDING", "CANCELLED", "COMPLETED", "IN_PROGRESS"})
+    @DisplayName("Test Start Ride when booking is not in a confirmed state")
+    void whenStartRide_withNonConfirmedStatus_thenThrowsIllegalStateException(Booking.BookingStatus status) {
+        // Arrange
+        // 1. Assign the correct driver, so it passes the first check.
+        booking.setDriver(driverUser);
+        // 2. Set the booking to the invalid status provided by the test parameter.
+        booking.setStatus(status);
+
+        // 3. Mock the repository to return this booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // Act & Assert
+        // Verify that the service method throws the correct exception because the status is not CONFIRMED.
+        assertThatThrownBy(() -> bookingService.startRide(booking.getId(), driverUser.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Ride can only be started for CONFIRMED bookings. Current status: " + status);
+
+        // Verify the booking's state was not altered.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 }
