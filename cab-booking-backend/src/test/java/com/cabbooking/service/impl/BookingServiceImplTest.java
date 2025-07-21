@@ -759,4 +759,178 @@ class BookingServiceImplTest {
         // Verify the booking's state was not altered.
         verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Complete Ride - Success")
+    void whenCompleteRide_withCorrectDriverAndInProgressBooking_thenRideIsCompleted() {
+        // Arrange
+        // 1. Set the booking to the required IN_PROGRESS state.
+        booking.setStatus(Booking.BookingStatus.IN_PROGRESS);
+        booking.setDriver(driverUser);
+
+        // 2. Mock the repository and service calls.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString()); // Update response mock
+
+        // Act
+        BookingResponse rideResponse = bookingService.completeRide(booking.getId(), driverUser.getId());
+
+        // Assert
+        // 1. Check the final response object.
+        assertThat(rideResponse).isNotNull();
+        assertThat(rideResponse.getStatus()).isEqualTo("COMPLETED");
+
+        // 2. Capture the booking object to verify its state before saving.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
+        assertThat(savedBooking.getEndTime()).isNotNull();
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
+
+        // 3. Verify the cab's availability was updated to AVAILABLE.
+        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> statusRequestCaptor =
+                ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
+        assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
+    }
+
+    @Test
+    @DisplayName("Test Complete Ride when booking does not exist")
+    void whenCompleteRide_withInvalidBookingId_thenThrowsResourceNotFoundException() {
+        // Arrange
+        // 1. Define a booking ID that we will pretend does not exist.
+        long nonExistentBookingId = 999L;
+        long anyDriverId = 2L;
+
+        // 2. Mock the repository to return an empty Optional for the non-existent ID.
+        given(bookingRepository.findById(nonExistentBookingId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        // Verify that calling the service with the invalid ID throws the correct exception
+        // and that the exception message is as expected.
+        assertThatThrownBy(() -> bookingService.completeRide(nonExistentBookingId, anyDriverId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Booking not found with id: " + nonExistentBookingId);
+
+        // Verify that no interactions that change state occurred.
+        verify(bookingRepository, never()).save(any(Booking.class));
+        verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("Test Complete Ride with incorrect driver")
+    void whenCompleteRide_withIncorrectDriver_thenThrowsIllegalStateException() {
+        // Arrange
+        // 1. Create a separate driver object to represent the unauthorized user.
+        User incorrectDriver = new User();
+        incorrectDriver.setId(101L); // Use a distinct ID.
+
+        // 2. Set the booking to its required state: IN_PROGRESS and assigned to the correct driver.
+        booking.setStatus(Booking.BookingStatus.IN_PROGRESS);
+        booking.setDriver(driverUser); // driverUser has ID 2L from setUp.
+
+        // 3. Mock the repository to return the booking when queried.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // Act & Assert
+        // Verify that calling the method with the incorrect driver's ID throws the correct exception.
+        assertThatThrownBy(() -> bookingService.completeRide(booking.getId(), incorrectDriver.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Booking not assigned to this driver or no driver assigned.");
+
+        // Verify that the booking's state was not changed and no save was attempted.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Booking.BookingStatus.class, names = {"PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"})
+    @DisplayName("Test Complete Ride when booking is not in progress")
+    void whenCompleteRide_withNonInProgressStatus_thenThrowsIllegalStateException(Booking.BookingStatus status) {
+        // Arrange
+        // 1. Assign the correct driver to pass the initial authorization check.
+        booking.setDriver(driverUser);
+        // 2. Set the booking to the invalid status provided by the test parameter.
+        booking.setStatus(status);
+
+        // 3. Mock the repository to return this booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // Act & Assert
+        // Verify that the service method throws the correct exception because the status is not IN_PROGRESS.
+        assertThatThrownBy(() -> bookingService.completeRide(booking.getId(), driverUser.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Ride can only be completed if IN_PROGRESS. Current status: " + status);
+
+        // Verify the booking's state was not altered and no save was attempted.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("Test Complete Ride when no driver is assigned")
+    void whenCompleteRide_withNoDriverAssigned_thenThrowsIllegalStateException() {
+        // Arrange
+        // 1. Set the booking to its required state for the test.
+        // It's IN_PROGRESS, so it passes the status check.
+        booking.setStatus(Booking.BookingStatus.IN_PROGRESS);
+        // 2. Crucially, ensure the driver is null.
+        booking.setDriver(null);
+
+        // 3. Mock the repository to return our booking without a driver.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // 4. Define an arbitrary driver ID for the request, as one would still be sent.
+        long anyDriverId = 2L;
+
+        // Act & Assert
+        // Verify that attempting to complete the ride throws the correct exception
+        // due to the null driver.
+        assertThatThrownBy(() -> bookingService.completeRide(booking.getId(), anyDriverId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Booking not assigned to this driver or no driver assigned.");
+
+        // Verify the booking's state was not altered.
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("Test Complete Ride when driver's cab is not found")
+    void whenCompleteRide_butDriverCabNotFound_thenBookingIsStillCompleted() {
+        // Arrange
+        // 1. Set the booking to its required IN_PROGRESS state with a driver.
+        booking.setStatus(Booking.BookingStatus.IN_PROGRESS);
+        booking.setDriver(driverUser);
+
+        // 2. Mock the booking repository to return our booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+
+        // 3. Critically, mock the cab repository to return empty, simulating no cab found for the driver.
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
+
+        // 4. Mock the save and map operations for a successful completion.
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString());
+
+        // Act
+        // We expect this call to succeed without throwing any exceptions.
+        BookingResponse rideResponse = bookingService.completeRide(booking.getId(), driverUser.getId());
+
+        // Assert
+        // 1. Verify the booking was successfully completed.
+        assertThat(rideResponse).isNotNull();
+        assertThat(rideResponse.getStatus()).isEqualTo("COMPLETED");
+
+        // 2. Verify the booking object was saved with the correct COMPLETED status.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        assertThat(bookingCaptor.getValue().getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
+
+        // 3. Most importantly, verify that no attempt was made to update a cab's status.
+        verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
+    }
 }
