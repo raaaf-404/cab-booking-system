@@ -37,6 +37,7 @@ import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @ExtendWith(MockitoExtension.class)
 class BookingServiceImplTest {
@@ -656,7 +657,7 @@ class BookingServiceImplTest {
         verify(bookingRepository).save(bookingCaptor.capture());
         Booking savedBooking = bookingCaptor.getValue();
 
-        // 3. Verify the status and start time were correctly set before saving.
+        // 3. Verify the status and start time we're correctly set before saving.
         assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
         assertThat(savedBooking.getStartTime()).isNotNull();
         assertThat(savedBooking.getUpdatedAt()).isNotNull();
@@ -932,5 +933,120 @@ class BookingServiceImplTest {
 
         // 3. Most importantly, verify that no attempt was made to update a cab's status.
         verify(cabService, never()).updateCabAvailabilityStatus(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("Test Update Payment Details - Success with Payment ID")
+    void whenUpdatePaymentDetails_withValidData_thenDetailsAreUpdated() {
+        // Arrange
+        // 1. Define the payment details to be updated.
+        boolean paymentStatus = true;
+        String paymentId = "txn_12345ABCDE";
+
+        // 2. Mock the repository to return the booking.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+        // Act
+        BookingResponse updatedBookingResponse = bookingService.updatePaymentDetails(booking.getId(), paymentStatus, paymentId);
+
+        // Assert
+        // 1. Verify the response object is not null.
+        assertThat(updatedBookingResponse).isNotNull();
+
+        // 2. Capture the booking object passed to the save method for detailed inspection.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        // 3. Verify that the payment status, payment ID, and timestamp were correctly set.
+        assertThat(savedBooking.isPaymentStatus()).isEqualTo(paymentStatus);
+        assertThat(savedBooking.getPaymentId()).isEqualTo(paymentId);
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Test Update Payment Details with null Payment ID")
+    void whenUpdatePaymentDetails_withNullPaymentId_thenOnlyStatusIsUpdated() {
+        // Arrange
+        // 1. Give the booking an existing payment ID to ensure it's not overwritten.
+        String originalPaymentId = "existing_txn_abcde";
+        booking.setPaymentId(originalPaymentId);
+
+        // 2. Define the new payment status. The paymentId parameter will be null.
+        boolean newPaymentStatus = true;
+
+        // 3. Mock the repository calls.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+        // Act
+        bookingService.updatePaymentDetails(booking.getId(), newPaymentStatus, null);
+
+        // Assert
+        // 1. Capture the booking object to inspect its state before saving.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        // 2. Verify the payment status was updated, but the original payment ID was preserved.
+        assertThat(savedBooking.isPaymentStatus()).isEqualTo(newPaymentStatus);
+        assertThat(savedBooking.getPaymentId()).isEqualTo(originalPaymentId);
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "   "})
+    @DisplayName("Test Update Payment Details with blank Payment ID")
+    void whenUpdatePaymentDetails_withBlankPaymentId_thenOnlyStatusIsUpdated(String blankPaymentId) {
+        // Arrange
+        // 1. Set an initial payment ID to ensure it is not overwritten.
+        String originalPaymentId = "existing_txn_zyxw";
+        booking.setPaymentId(originalPaymentId);
+
+        // 2. Define the new payment status to be updated.
+        boolean newPaymentStatus = false;
+
+        // 3. Mock the repository calls.
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+        // Act
+        bookingService.updatePaymentDetails(booking.getId(), newPaymentStatus, blankPaymentId);
+
+        // Assert
+        // 1. Capture the booking object sent to the save method.
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        // 2. Verify the status was updated, but the original payment ID remains unchanged.
+        assertThat(savedBooking.isPaymentStatus()).isEqualTo(newPaymentStatus);
+        assertThat(savedBooking.getPaymentId()).isEqualTo(originalPaymentId);
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Test Update Payment Details when booking does not exist")
+    void whenUpdatePaymentDetails_withInvalidBookingId_thenThrowsResourceNotFoundException() {
+        // Arrange
+        // 1. Define a booking ID that does not exist in the repository.
+        long nonExistentBookingId = 999L;
+
+        // 2. Mock the repository to return an empty Optional for this ID.
+        given(bookingRepository.findById(nonExistentBookingId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        // Verify that calling the service with the non-existent ID throws the correct exception
+        // with the expected message.
+        assertThatThrownBy(() -> bookingService.updatePaymentDetails(nonExistentBookingId, true, "some-id"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Booking not found with id: " + nonExistentBookingId);
+
+        // Verify that no save operation was attempted since the booking was not found.
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 }
