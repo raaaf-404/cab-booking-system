@@ -1049,4 +1049,96 @@ class BookingServiceImplTest {
         // Verify that no save operation was attempted since the booking was not found.
         verify(bookingRepository, never()).save(any(Booking.class));
     }
+
+    @Test
+    @DisplayName("Test Find Pending Bookings for Driver Assignment - Success")
+    void whenFindPendingBookingsForDriverAssignment_andBookingsExist_thenReturnsBookingResponseList() {
+        // Arrange
+        // 1. Create mock bookings that match the criteria (PENDING/CONFIRMED and no driver).
+        Booking pendingBooking = new Booking();
+        pendingBooking.setId(10L);
+        pendingBooking.setStatus(Booking.BookingStatus.PENDING);
+        pendingBooking.setDriver(null);
+
+        Booking confirmedBooking = new Booking();
+        confirmedBooking.setId(11L);
+        confirmedBooking.setStatus(Booking.BookingStatus.CONFIRMED);
+        confirmedBooking.setDriver(null);
+
+        List<Booking> mockBookings = List.of(pendingBooking, confirmedBooking);
+
+        // 2. Mock the repository to return our list when the specific query is called.
+        List<Booking.BookingStatus> expectedStatuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
+        given(bookingRepository.findByStatusInAndDriverIsNull(expectedStatuses)).willReturn(mockBookings);
+
+        // 3. Mock the mapper to return a response for any booking object.
+        // We can use a generic response since we're not testing the mapping logic itself here.
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(new BookingResponse());
+
+        // Act
+        List<BookingResponse> result = bookingService.findPendingBookingsForDriverAssignment();
+
+        // Assert
+        // 1. Verify that the result is not null and contains the correct number of items.
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+
+        // 2. Verify that the repository method was called exactly once with the correct status list.
+        verify(bookingRepository, times(1)).findByStatusInAndDriverIsNull(expectedStatuses);
+
+        // 3. Verify that the mapper was called for each booking found.
+        verify(bookingMapper, times(2)).toBookingResponse(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("Test Find Pending Bookings for Driver Assignment when none exist")
+    void whenFindPendingBookingsForDriverAssignment_andNoBookingsExist_thenReturnsEmptyList() {
+        // Arrange
+        // 1. Define the list of statuses the method will query for.
+        List<Booking.BookingStatus> expectedStatuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
+
+        // 2. Mock the repository to return an empty list for this specific query.
+        given(bookingRepository.findByStatusInAndDriverIsNull(expectedStatuses)).willReturn(Collections.emptyList());
+
+        // Act
+        List<BookingResponse> result = bookingService.findPendingBookingsForDriverAssignment();
+
+        // Assert
+        // 1. Verify that the result is not null and is empty.
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        // 2. Verify that the repository method was called.
+        verify(bookingRepository, times(1)).findByStatusInAndDriverIsNull(expectedStatuses);
+
+        // 3. Most importantly, verify that the mapper was never invoked since there were no bookings to map.
+        verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("Test Find Pending Bookings for Driver Assignment verifies correct query method is called")
+    void whenFindPendingBookingsForDriverAssignment_thenVerifiesCorrectRepositoryMethodCall() {
+        // Arrange
+        // 1. Define the exact list of statuses your service method should be querying for.
+        List<Booking.BookingStatus> expectedStatuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
+
+        // 2. We don't need to create mock bookings. We'll simply mock the repository to return an empty list
+        // for this specific query, as our primary goal is to verify the call itself.
+        given(bookingRepository.findByStatusInAndDriverIsNull(expectedStatuses)).willReturn(Collections.emptyList());
+
+        // Act
+        List<BookingResponse> result = bookingService.findPendingBookingsForDriverAssignment();
+
+        // Assert
+        // 1. First, confirm the result is what you'd expect when the repository finds nothing.
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        // 2. Most importantly, verify that the service method called the repository with the
+        // exact list of statuses we defined. This proves the filtering logic is being correctly invoked.
+        verify(bookingRepository, times(1)).findByStatusInAndDriverIsNull(expectedStatuses);
+
+        // 3. Ensure no mapping occurred.
+        verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
+    }
 }
