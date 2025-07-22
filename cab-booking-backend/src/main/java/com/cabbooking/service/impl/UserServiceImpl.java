@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder; // Import PasswordEncoder
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -23,17 +24,12 @@ import java.util.stream.Collectors;
 
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder; // For securely hashing passwords
-    private final UserMapper userMapper; 
-
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.userMapper = userMapper;
-    }
+    private final UserMapper userMapper;
 
     @Override
     @Transactional
