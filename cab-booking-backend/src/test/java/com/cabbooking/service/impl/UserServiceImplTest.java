@@ -229,4 +229,58 @@ class UserServiceImplTest {
         // Assert
         verify(userRepository).save(any(User.class));
     }
+
+    @Test
+    @DisplayName("Test getUserById with a valid ID should return user details")
+    void whenGetUserById_withValidId_thenReturnsUserResponse() {
+        // Arrange
+        Long userId = 1L;
+        User foundUser = new User(); // The user object returned by the repository
+        foundUser.setId(userId);
+        foundUser.setName("Test User");
+        foundUser.setEmail("test@example.com");
+
+        UserResponse expectedResponse = new UserResponse(); // The DTO we expect to get back
+        expectedResponse.setId(userId);
+        expectedResponse.setName("Test User");
+        expectedResponse.setEmail("test@example.com");
+
+        // Mocking the repository to return our sample user when findById is called
+        given(userRepository.findById(userId)).willReturn(Optional.of(foundUser));
+
+        // Mocking the mapper to convert the User object to a UserResponse
+        given(userMapper.mapToUserResponse(foundUser)).willReturn(expectedResponse);
+
+        // Act
+        Optional<UserResponse> result = userService.getUserById(userId);
+
+        // Assert
+        assertThat(result).isPresent(); // Check that the Optional is not empty
+        assertThat(result.get().getId()).isEqualTo(userId); // Verify the ID matches
+        assertThat(result.get().getEmail()).isEqualTo(foundUser.getEmail()); // Verify the email matches
+
+        // Verify that the repository and mapper methods were called
+        verify(userRepository).findById(userId);
+        verify(userMapper).mapToUserResponse(foundUser);
+    }
+
+    @Test
+    @DisplayName("Test getUserById with a non-existent ID should return empty")
+    void whenGetUserById_withNonExistentId_thenReturnsEmpty() {
+        // Arrange
+        Long userId = 99L; // An ID that we assume does not exist
+
+        // Mocking the repository to return an empty Optional
+        given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+        // Act
+        Optional<UserResponse> result = userService.getUserById(userId);
+
+        // Assert
+        assertThat(result).isNotPresent(); // or assertThat(result).isEmpty();
+
+        // Verify that the repository was called but the mapper was never used
+        verify(userRepository).findById(userId);
+        verify(userMapper, never()).mapToUserResponse(any(User.class));
+    }
 }
