@@ -283,4 +283,48 @@ class UserServiceImplTest {
         verify(userRepository).findById(userId);
         verify(userMapper, never()).mapToUserResponse(any(User.class));
     }
+
+    @Test
+    @DisplayName("Test findByEmail with an existing email should return the user")
+    void whenFindByEmail_withExistingEmail_thenReturnsUser() {
+        // Arrange
+        String email = "test@example.com";
+        User foundUser = new User(); // The user object we expect from the repository
+        foundUser.setId(1L);
+        foundUser.setName("Test User");
+        foundUser.setEmail(email);
+
+        // Mocking the repository to return our sample user when findByEmail is called
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(foundUser));
+
+        // Act
+        Optional<User> result = userService.findByEmail(email);
+
+        // Assert
+        assertThat(result).isPresent(); // Verify the Optional contains a value
+        assertThat(result.get().getEmail()).isEqualTo(email); // Check if the email matches
+        assertThat(result.get().getName()).isEqualTo("Test User"); // Check another field for good measure
+
+        // Verify that the repository's findByEmail method was called exactly once with the correct email
+        verify(userRepository).findByEmail(email);
+    }
+
+    @Test
+    @DisplayName("Test findByEmail with a non-existent email should return empty")
+    void whenFindByEmail_withNonExistentEmail_thenReturnsEmpty() {
+        // Arrange
+        String email = "nonexistent@example.com";
+
+        // Mocking the repository to return an empty Optional for the given email
+        given(userRepository.findByEmail(email)).willReturn(Optional.empty());
+
+        // Act
+        Optional<User> result = userService.findByEmail(email);
+
+        // Assert
+        assertThat(result).isNotPresent(); // Assert that the Optional is empty
+
+        // Verify that the repository's findByEmail method was called
+        verify(userRepository).findByEmail(email);
+    }
 }
