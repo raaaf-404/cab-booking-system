@@ -195,7 +195,7 @@ class BookingServiceImplTest {
     assertThat(exception.getMessage()).isEqualTo(expectedMessage);
 
     // Verify that no mapping or saving occurred
-    verify(bookingMapper, never()).toBookingEntity(any(BookingResponse.class));
+    verify(bookingMapper, never()).toBookingEntity(any(BookingRegistrationRequest.class));
     verify(bookingRepository, never()).save(any(Booking.class));
     verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
    }
@@ -224,36 +224,40 @@ class BookingServiceImplTest {
         verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
     }
 
-   @Test
-   @DisplayName("Test Get Booking By valid ID should return booking")
-   void whenGetBookingById_withValidId_thenReturnsBookingResponse() {
-    // Arrange
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+    @Test
+    @DisplayName("Test Get Booking By valid ID should return booking")
+    void whenGetBookingById_withValidId_thenReturnsBookingResponse() {
+        // Arrange
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
-    // Act
-    // The method now returns a direct BookingResponse object
-    BookingResponse foundBooking = bookingService.getBookingById(1L);
+        // Act
+        BookingResponse foundBooking = bookingService.getBookingById(booking.getId()); // Use booking.getId() here
 
-    // Assert
-    // We can now assert directly on the returned object
-    assertThat(foundBooking).isNotNull();
-    assertThat(foundBooking.getId()).isEqualTo(1L);
-    assertThat(foundBooking.getPassenger().getName()).isEqualTo("Passenger Pete");
-   }
+        // Assert
+        assertThat(foundBooking).isNotNull();
+        assertThat(foundBooking.getId()).isEqualTo(bookingResponse.getId()); // Assert against bookingResponse's ID
+        assertThat(foundBooking.getPassenger().getName()).isEqualTo(bookingResponse.getPassenger().getName());
+        assertThat(foundBooking.getPickupLocation()).isEqualTo(bookingResponse.getPickupLocation());
+        assertThat(foundBooking.getDropoffLocation()).isEqualTo(bookingResponse.getDropoffLocation());
+        assertThat(foundBooking.getStatus()).isEqualTo(bookingResponse.getStatus());
+
+        // Verify
+        verify(bookingRepository, times(1)).findById(booking.getId());
+        verify(bookingMapper, times(1)).toBookingResponse(booking);
+    }
 
     @Test
     @DisplayName("Test Get Booking By invalid ID should throw ResourceNotFoundException")
     void whenGetBookingById_withInvalidId_thenThrowsResourceNotFoundException() {
     // Arrange
-    // to Mock the repository to return an empty Optional, simulating a not-found scenario
-    given(bookingRepository.findById(1L)).willReturn(Optional.empty());
+    given(bookingRepository.findById(booking.getId())).willReturn(Optional.empty());
 
     // Act & Assert
-    // Verify that calling the method now throws the expected exception
-    assertThrows(ResourceNotFoundException.class, () -> bookingService.getBookingById(1L));
+    assertThrows(ResourceNotFoundException.class, () -> bookingService.getBookingById(booking.getId()));
 
-    // Also, verify the mapper was never used, as the process fails before mapping
+    //Verify
+    verify(bookingRepository, times(1)).findById(booking.getId());
     verify(bookingMapper, never()).toBookingResponse(any(Booking.class));
     }
 
