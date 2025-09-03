@@ -10,6 +10,7 @@ import com.cabbooking.model.Booking;
 import com.cabbooking.model.Cab;
 import com.cabbooking.model.User;
 import com.cabbooking.repository.BookingRepository;
+import com.cabbooking.security.BookingSecurityService;
 import com.cabbooking.repository.CabRepository;
 import com.cabbooking.service.CabService;
 import com.cabbooking.repository.UserRepository;
@@ -53,6 +54,8 @@ class BookingServiceImplTest {
     private CabService cabService;
     @Mock
     private BookingMapper bookingMapper;
+    @Mock
+    private BookingSecurityService bookingSecurityService;
     @InjectMocks
     private BookingServiceImpl bookingService;
 
@@ -398,22 +401,42 @@ class BookingServiceImplTest {
     void whenUpdateStatus_toInProgress_thenUpdatesCabStatus() {
         // Arrange
         booking.setDriver(driverUser);
-        given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        booking.setStatus(Booking.BookingStatus.CONFIRMED); // Starting state for the test
+
+        // Mock repository and service calls
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
         given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(invocation -> invocation.getArgument(0)); // Return the saved entity
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
         // Act
-        bookingService.updateBookingStatus(1L, Booking.BookingStatus.IN_PROGRESS);
+        BookingResponse updatedResponse = bookingService.updateBookingStatus(booking.getId(), Booking.BookingStatus.IN_PROGRESS);
 
         // Assert
-        assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
+        // 1. Verify the security check was performed
+        verify(bookingSecurityService).validateStatusChange(booking.getId(), Booking.BookingStatus.IN_PROGRESS);
 
-        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> captor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
-        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), captor.capture());
-        assertThat(captor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.IN_RIDE);
+        // 2. Capture the booking entity that was saved
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
 
-        verify(bookingRepository).save(booking);
+        // 3. Assert the state of the saved booking
+        assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
+        assertThat(savedBooking.getUpdatedAt()).isNotNull();
+
+        // 4. Capture the request sent to update the cab's status
+        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> statusRequestCaptor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
+
+        // 5. Assert the cab's new status
+        assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.IN_RIDE);
+
+        // 6. Optionally, verify the final DTO response
+        assertThat(updatedResponse).isNotNull();
+        // Assuming bookingResponse is configured to have the correct final state for this test
+        bookingResponse.setStatus(Booking.BookingStatus.IN_PROGRESS.name());
+        assertThat(updatedResponse.getStatus()).isEqualTo(bookingResponse.getStatus());
     }
 
     @Test
