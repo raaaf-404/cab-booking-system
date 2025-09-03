@@ -17,10 +17,6 @@ import com.cabbooking.service.BookingService;
 import com.cabbooking.service.CabService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -98,11 +94,11 @@ public class BookingServiceImpl implements BookingService {
 
     )
     public BookingResponse updateBookingStatus(Long bookingId, Booking.BookingStatus newStatus) {
-        
+        //Validates if booking status state can be change: will throw an exception if not
         bookingSecurityService.validateStatusChange(bookingId, newStatus);
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+                .orElseThrow(() -> new ResourceNotFoundException("Bo    oking not found with id: " + bookingId));
 
         booking.setStatus(newStatus);
         booking.setUpdatedAt(LocalDateTime.now());
