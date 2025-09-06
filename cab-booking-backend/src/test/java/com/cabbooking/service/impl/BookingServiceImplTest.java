@@ -439,61 +439,71 @@ class BookingServiceImplTest {
         assertThat(updatedResponse.getStatus()).isEqualTo(bookingResponse.getStatus());
     }
 
-    @Test
-    @DisplayName("Test Update Status to COMPLETED should update cab to AVAILABLE")
-    void whenUpdateStatus_toCompleted_thenUpdatesCabStatusToAvailable() {
-        // Arrange
-        // Set the initial state for the test
-        booking.setDriver(driverUser);
-        booking.setStatus(Booking.BookingStatus.IN_PROGRESS); // A booking must be in progress to be completed
+        @Test
+        @DisplayName("Test Update Status to COMPLETED should update cab to AVAILABLE")
+        void whenUpdateStatus_toCompleted_thenUpdatesCabStatusToAvailable() {
+            // Arrange
+            // Set the initial state for the test
+            booking.setDriver(driverUser);
+            booking.setStatus(Booking.BookingStatus.IN_PROGRESS); // A booking must be in progress to be completed
 
-        // Mock the dependencies
-        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
-        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-        // When save is called, just return the object that was passed to it
-        given(bookingRepository.save(any(Booking.class))).willAnswer(invocation -> invocation.getArgument(0));
-        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+            // Mock the dependencies
+            given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+            given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+            // When save is called, return the object that was passed to it
+            given(bookingRepository.save(any(Booking.class))).willAnswer(
+                    invocation -> invocation.getArgument(0));
+            given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
-        // Act
-        bookingService.updateBookingStatus(booking.getId(), Booking.BookingStatus.COMPLETED);
+            // Act
+            bookingService.updateBookingStatus(booking.getId(), Booking.BookingStatus.COMPLETED);
 
-        // Assert
-        // 1. Capture the booking object that was passed to the repository's save method
-        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
-        verify(bookingRepository).save(bookingCaptor.capture());
-        Booking savedBooking = bookingCaptor.getValue();
+            // Assert
+            // 1. Capture the booking object that was passed to the repository's save method
+            ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+            verify(bookingRepository).save(bookingCaptor.capture());
+            Booking savedBooking = bookingCaptor.getValue();
 
-        // 2. Assert that the captured booking has the correct final state
-        assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
+            // 2. Assert that the captured booking has the correct final state
+            assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
 
-        // 3. Capture the request that was sent to the cab service
-        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> statusRequestCaptor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
-        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
+            // 3. Capture the request that was sent to the cab service
+            ArgumentCaptor<CabUpdateAvailabilityStatusRequest> statusRequestCaptor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+            verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
 
-        // 4. Assert that the cab's status was correctly updated to AVAILABLE
-        assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
-    }
+            // 4. Assert that the cab's status was correctly updated to AVAILABLE
+            assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
+        }
 
     @Test
     @DisplayName("Test Update Status for booking with no driver should not fail")
     void whenUpdateStatus_withNoDriver_thenSkipsCabUpdate() {
-    // Arrange
-    // to Ensure the booking has no driver
-    booking.setDriver(null); 
-    
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
-    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
-    // Act
-    bookingService.updateBookingStatus(1L, Booking.BookingStatus.CANCELLED);
+        // Arrange
+        // Ensure the booking has no driver and is in a valid starting state
+        booking.setDriver(null);
+        booking.setStatus(Booking.BookingStatus.CONFIRMED); // A valid state to transition from
 
-    // Assert
-    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.CANCELLED);
-    
-    // Verify that the cab service was NEVER called because there was no driver
-    verify(cabService, never()).updateCabAvailabilityStatus(any(), any(CabUpdateAvailabilityStatusRequest.class));
-    verify(bookingRepository).save(booking);
+        // Mock the dependencies
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+        // Act
+        bookingService.updateBookingStatus(booking.getId(), Booking.BookingStatus.CANCELLED);
+
+        // Assert
+        // 1. Verify that the cab service was NEVER called because there was no driver
+        verify(cabService, never()).updateCabAvailabilityStatus(any(), any());
+
+        // 2. Capture the booking that was saved to verify its final state
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        // 3. Assert that the captured booking was correctly updated
+        assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.CANCELLED);
+        assertThat(savedBooking.getDriver()).isNull(); // Also good to confirm the driver is still null
     }
 
     @Test
