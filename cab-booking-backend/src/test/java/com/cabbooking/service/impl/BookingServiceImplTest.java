@@ -636,26 +636,24 @@ class BookingServiceImplTest {
     @Test
     @DisplayName("Test Assign Driver To Booking when cab is not available")
     void whenAssignDriverToBooking_withUnavailableCab_thenThrowsIllegalStateException() {
-    // Arrange
-    // 1. Ensure the booking is PENDING to pass the initial checks
-    booking.setStatus(Booking.BookingStatus.PENDING);
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        // Arrange
+        // 1. Set the cab to the state that would cause a validation failure.
+        cab.setStatus(Cab.AvailabilityStatus.BOOKED);
 
-    // 2. Mock a valid driver
-    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
+        // 2. Instruct the MOCKED security service to throw the expected exception.
+        // This simulates the behavior of the real validation logic failing.
+        doThrow(new IllegalStateException("The assigned driver is not currently available. Status: " + cab.getStatus()))
+                .when(bookingSecurityService).validateDriverAssignment(booking.getId(), driverUser.getId());
 
-    // 3. Set the driver's cab to a non-available status
-    cab.setStatus(Cab.AvailabilityStatus.BOOKED);
-    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+        // Act & Assert
+        // Now, when the service calls the mock, it will throw the exception we told it to.
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(booking.getId(), driverUser.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("The assigned driver is not currently available. Status: " + cab.getStatus());
 
-    // Act & Assert
-    // The validation should now fail because the cab's status is not AVAILABLE.
-    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessage("The assigned driver is not currently available. Status: " + cab.getStatus());
-
-    // Verify the booking was not saved or modified
-    verify(bookingRepository, never()).save(any(Booking.class));
+        // Verify the security service was called, but the main logic was not.
+        verify(bookingSecurityService).validateDriverAssignment(booking.getId(), driverUser.getId());
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
