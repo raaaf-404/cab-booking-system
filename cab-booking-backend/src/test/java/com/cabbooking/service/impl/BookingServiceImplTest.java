@@ -586,27 +586,27 @@ class BookingServiceImplTest {
     @DisplayName("Test Assign Driver To Booking with a user who is not a driver")
     void whenAssignDriverToBooking_withUserWhoIsNotADriver_thenThrowsIllegalArgumentException() {
         // Arrange
-        // 1. Create a user with the 'USER' role, which is not a 'DRIVER'
+        // 1. Define the test data
         User nonDriverUser = new User();
-        nonDriverUser.setId(2L);
-        // Assign the USER role, which is a valid, non-driver role in your system
+        nonDriverUser.setId(99L);
         nonDriverUser.setRole(Collections.singleton(User.Role.USER));
-    
-        // 2. Mock the booking repository to return a PENDING booking
-        given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-        booking.setStatus(Booking.BookingStatus.PENDING); // Ensure booking is pending for the validation to proceed
-    
-        // 3. Mock the user repository to return our non-driver user
-        given(userRepository.findById(2L)).willReturn(Optional.of(nonDriverUser));
-    
+
+        // 2. Mock the security service to throw the expected exception when called with our data.
+        // This is the key change. We are simulating the security validation failure.
+        doThrow(new IllegalArgumentException("User with id " + nonDriverUser.getId() + " is not a DRIVER."))
+                .when(bookingSecurityService).validateDriverAssignment(booking.getId(), nonDriverUser.getId());
+
         // Act & Assert
-        // The service should now correctly identify that this user is not a driver
-        // and throw the exception from within your validateDriverAssignment method.
-        assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(booking.getId(), nonDriverUser.getId()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User with id 2 is not a DRIVER.");
-    
-        // Verify that the booking was not saved or altered
+                .hasMessage("User with id " + nonDriverUser.getId() + " is not a DRIVER.");
+
+        // Verify that the security service was called
+        verify(bookingSecurityService).validateDriverAssignment(booking.getId(), nonDriverUser.getId());
+
+        // Verify that because of the exception, the code never tried to find a booking, user, or save.
+        verify(bookingRepository, never()).findById(anyLong());
+        verify(userRepository, never()).findById(anyLong());
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 
