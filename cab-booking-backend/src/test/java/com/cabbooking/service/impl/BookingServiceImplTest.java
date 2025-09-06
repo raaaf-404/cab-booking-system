@@ -592,7 +592,6 @@ class BookingServiceImplTest {
         nonDriverUser.setRole(Collections.singleton(User.Role.USER));
 
         // 2. Mock the security service to throw the expected exception when called with our data.
-        // This is the key change. We are simulating the security validation failure.
         doThrow(new IllegalArgumentException("User with id " + nonDriverUser.getId() + " is not a DRIVER."))
                 .when(bookingSecurityService).validateDriverAssignment(booking.getId(), nonDriverUser.getId());
 
@@ -613,25 +612,25 @@ class BookingServiceImplTest {
     @Test
     @DisplayName("Test Assign Driver To Booking when driver has no cab")
     void whenAssignDriverToBooking_withDriverWithoutCab_thenThrowsResourceNotFoundException() {
-    // Arrange
-    // 1. Ensure the booking is in a PENDING state for the check to proceed
-    booking.setStatus(Booking.BookingStatus.PENDING);
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        // Arrange
+        // 1. Ensure the booking is in a PENDING state for the check to proceed
+        booking.setStatus(Booking.BookingStatus.PENDING);
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
 
-    // 2. Mock a valid driver
-    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
+        // 2. Mock a valid driver
+        given(userRepository.findById(driverUser.getId())).willReturn(Optional.of(driverUser));
 
-    // 3. Mock the cab repository to find no cab for the given driver
-    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
+        // 3. Mock the cab repository to find no cab for the given driver
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
 
-    // Act & Assert
-    // The validation logic should now fail when it cannot find a cab for the driver.
-    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessage("driver with id " + driverUser.getId() + " does not have an assigned cab");
+        // Act & Assert
+        // The validation logic should now fail when it cannot find a cab for the driver.
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(booking.getId(), driverUser.getId()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("driver with id " + driverUser.getId() + " does not have an assigned cab");
 
-    // Verify the booking was not updated
-    verify(bookingRepository, never()).save(any(Booking.class));
+        // Verify the booking was not updated
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
