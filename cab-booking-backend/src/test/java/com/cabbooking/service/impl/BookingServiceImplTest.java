@@ -564,14 +564,22 @@ class BookingServiceImplTest {
     @Test
     @DisplayName("Test Assign Driver To Booking with invalid driver id")
     void whenAssignDriverToBooking_withInvalidDriverId_thenThrowsResourceNotFoundException() {
-    // Arrange
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-    given(userRepository.findById(2L)).willReturn(Optional.empty());
+        // Arrange
+        long nonExistentDriverId = 999L;
+        // The booking must be in a PENDING state for the check to proceed
+        booking.setStatus(Booking.BookingStatus.PENDING);
 
-    // Act & Assert
-    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("Driver not found with id: 2");
+        // Mock the repository to return the valid booking but find no user
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(userRepository.findById(nonExistentDriverId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(booking.getId(), nonExistentDriverId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Driver not found with id: " + nonExistentDriverId);
+
+        // Verify that the booking was not saved or altered
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
