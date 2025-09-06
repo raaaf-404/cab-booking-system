@@ -506,24 +506,42 @@ class BookingServiceImplTest {
         assertThat(savedBooking.getDriver()).isNull(); // Also good to confirm the driver is still null
     }
 
-    @Test
-    @DisplayName("Test Assign Driver To Booking should succeed")
-    void whenAssignDriverToBooking_withValidData_thenReturnsBookingResponse() {
-    // Arrange
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
-    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
-    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        @Test
+        @DisplayName("Test Assign Driver To Booking should succeed")
+        void whenAssignDriverToBooking_withValidData_thenReturnsBookingResponse() {
+            // Arrange
+            // Set the initial state of the booking to PENDING
+            booking.setStatus(Booking.BookingStatus.PENDING);
+            cab.setStatus(Cab.AvailabilityStatus.AVAILABLE);
 
-    // Act
-    BookingResponse updatedBooking = bookingService.assignDriverToBooking(1L, 2L);
+            // Mock the dependencies using IDs from our test objects
+            given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+            given(userRepository.findById(driverUser.getId())).willReturn(Optional.of(driverUser));
+            given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+            given(bookingRepository.save(any(Booking.class))).willAnswer(invocation -> invocation.getArgument(0));
+            given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
-    // Assert
-    assertThat(updatedBooking).isNotNull();
-    assertThat(updatedBooking.getStatus()).isEqualTo("CONFIRMED");
-    verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), any(CabUpdateAvailabilityStatusRequest.class));
-    }
+            // Act
+            BookingResponse updatedBooking = bookingService.assignDriverToBooking(booking.getId(), driverUser.getId());
+
+            // Assert
+            // 1. Verify the security check was performed
+            verify(bookingSecurityService).validateDriverAssignment(booking.getId(), driverUser.getId());
+
+            // 2. Capture and verify the state of the saved booking entity
+            ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+            verify(bookingRepository).save(bookingCaptor.capture());
+            Booking savedBooking = bookingCaptor.getValue();
+
+            assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.CONFIRMED);
+            assertThat(savedBooking.getDriver()).isEqualTo(driverUser);
+
+            // 3. Capture and verify the request sent to the cab service
+            ArgumentCaptor<CabUpdateAvailabilityStatusRequest> statusRequestCaptor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+            verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
+
+            assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.BOOKED);
+        }
 
     @Test
     @DisplayName("Test Assign Driver To Booking with invalid booking id")
