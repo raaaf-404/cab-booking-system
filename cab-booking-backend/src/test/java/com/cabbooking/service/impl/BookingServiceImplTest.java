@@ -443,166 +443,217 @@ class BookingServiceImplTest {
     @DisplayName("Test Update Status to COMPLETED should update cab to AVAILABLE")
     void whenUpdateStatus_toCompleted_thenUpdatesCabStatusToAvailable() {
         // Arrange
+        // Set the initial state for the test
         booking.setDriver(driverUser);
-        given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        booking.setStatus(Booking.BookingStatus.IN_PROGRESS); // A booking must be in progress to be completed
+
+        // Mock the dependencies
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
         given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // When save is called, return the object that was passed to it
+        given(bookingRepository.save(any(Booking.class))).willAnswer(
+                invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
         // Act
-        bookingService.updateBookingStatus(1L, Booking.BookingStatus.COMPLETED);
+        bookingService.updateBookingStatus(booking.getId(), Booking.BookingStatus.COMPLETED);
 
         // Assert
-        assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
+        // 1. Capture the booking object that was passed to the repository's save method
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
 
-        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> captor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
-        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), captor.capture());
-        assertThat(captor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
+        // 2. Assert that the captured booking has the correct final state
+        assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.COMPLETED);
 
-        verify(bookingRepository).save(booking);
+        // 3. Capture the request that was sent to the cab service
+        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> statusRequestCaptor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
+
+        // 4. Assert that the cab's status was correctly updated to AVAILABLE
+        assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
     }
 
     @Test
     @DisplayName("Test Update Status for booking with no driver should not fail")
     void whenUpdateStatus_withNoDriver_thenSkipsCabUpdate() {
-    // Arrange
-    // to Ensure the booking has no driver
-    booking.setDriver(null); 
-    
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
-    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
-    // Act
-    bookingService.updateBookingStatus(1L, Booking.BookingStatus.CANCELLED);
+        // Arrange
+        // Ensure the booking has no driver and is in a valid starting state
+        booking.setDriver(null);
+        booking.setStatus(Booking.BookingStatus.CONFIRMED); // A valid state to transition from
 
-    // Assert
-    assertThat(booking.getStatus()).isEqualTo(Booking.BookingStatus.CANCELLED);
-    
-    // Verify that the cab service was NEVER called because there was no driver
-    verify(cabService, never()).updateCabAvailabilityStatus(any(), any(CabUpdateAvailabilityStatusRequest.class));
-    verify(bookingRepository).save(booking);
+        // Mock the dependencies
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(bookingRepository.save(any(Booking.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+
+        // Act
+        bookingService.updateBookingStatus(booking.getId(), Booking.BookingStatus.CANCELLED);
+
+        // Assert
+        // 1. Verify that the cab service was NEVER called because there was no driver
+        verify(cabService, never()).updateCabAvailabilityStatus(any(), any());
+
+        // 2. Capture the booking that was saved to verify its final state
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        // 3. Assert that the captured booking was correctly updated
+        assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.CANCELLED);
+        assertThat(savedBooking.getDriver()).isNull(); // Also good to confirm the driver is still null
     }
 
     @Test
     @DisplayName("Test Assign Driver To Booking should succeed")
     void whenAssignDriverToBooking_withValidData_thenReturnsBookingResponse() {
-    // Arrange
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
-    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-    given(bookingRepository.save(any(Booking.class))).willReturn(booking);
-    given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
+        // Arrange
+        // Set the initial state of the booking to PENDING
+        booking.setStatus(Booking.BookingStatus.PENDING);
+        cab.setStatus(Cab.AvailabilityStatus.AVAILABLE);
 
-    // Act
-    BookingResponse updatedBooking = bookingService.assignDriverToBooking(1L, 2L);
+        // Mock the dependencies using IDs from our test objects
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(userRepository.findById(driverUser.getId())).willReturn(Optional.of(driverUser));
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+        given(bookingRepository.save(any(Booking.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
-    // Assert
-    assertThat(updatedBooking).isNotNull();
-    assertThat(updatedBooking.getStatus()).isEqualTo("CONFIRMED");
-    verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), any(CabUpdateAvailabilityStatusRequest.class));
+        // Act
+        BookingResponse updatedBooking = bookingService.assignDriverToBooking(booking.getId(), driverUser.getId());
+
+        // Assert
+        // 1. Verify the security check was performed
+        verify(bookingSecurityService).validateDriverAssignment(booking.getId(), driverUser.getId());
+
+        // 2. Capture and verify the state of the saved booking entity
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        Booking savedBooking = bookingCaptor.getValue();
+
+        assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.CONFIRMED);
+        assertThat(savedBooking.getDriver()).isEqualTo(driverUser);
+
+        // 3. Capture and verify the request sent to the cab service
+        ArgumentCaptor<CabUpdateAvailabilityStatusRequest> statusRequestCaptor = ArgumentCaptor.forClass(CabUpdateAvailabilityStatusRequest.class);
+        verify(cabService).updateCabAvailabilityStatus(eq(cab.getId()), statusRequestCaptor.capture());
+
+        assertThat(statusRequestCaptor.getValue().getStatus()).isEqualTo(Cab.AvailabilityStatus.BOOKED);
     }
 
     @Test
     @DisplayName("Test Assign Driver To Booking with invalid booking id")
     void whenAssignDriverToBooking_withInvalidBookingId_thenThrowsResourceNotFoundException() {
-    // Arrange
-    given(bookingRepository.findById(1L)).willReturn(Optional.empty());
+        // Arrange
+        long nonExistentBookingId = 999L; // Use a distinct, descriptive number
+        long anyDriverId = 2L;
 
-    // Act & Assert
-    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("Booking not found with id: 1");
+        given(bookingRepository.findById(nonExistentBookingId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(nonExistentBookingId, anyDriverId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Booking not found with id: " + nonExistentBookingId);
+
+        // Verify no save operation was attempted
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
     @DisplayName("Test Assign Driver To Booking with invalid driver id")
     void whenAssignDriverToBooking_withInvalidDriverId_thenThrowsResourceNotFoundException() {
-    // Arrange
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-    given(userRepository.findById(2L)).willReturn(Optional.empty());
+        // Arrange
+        long nonExistentDriverId = 999L;
+        // The booking must be in a PENDING state for the check to proceed
+        booking.setStatus(Booking.BookingStatus.PENDING);
 
-    // Act & Assert
-    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("Driver not found with id: 2");
+        // Mock the repository to return the valid booking but find no user
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
+        given(userRepository.findById(nonExistentDriverId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(booking.getId(), nonExistentDriverId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Driver not found with id: " + nonExistentDriverId);
+
+        // Verify that the booking was not saved or altered
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
     @DisplayName("Test Assign Driver To Booking with a user who is not a driver")
     void whenAssignDriverToBooking_withUserWhoIsNotADriver_thenThrowsIllegalArgumentException() {
         // Arrange
-        // 1. Create a user with the 'USER' role, which is not a 'DRIVER'
+        // 1. Define the test data
         User nonDriverUser = new User();
-        nonDriverUser.setId(2L);
-        // Assign the USER role, which is a valid, non-driver role in your system
+        nonDriverUser.setId(99L);
         nonDriverUser.setRole(Collections.singleton(User.Role.USER));
-    
-        // 2. Mock the booking repository to return a PENDING booking
-        given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
-        booking.setStatus(Booking.BookingStatus.PENDING); // Ensure booking is pending for the validation to proceed
-    
-        // 3. Mock the user repository to return our non-driver user
-        given(userRepository.findById(2L)).willReturn(Optional.of(nonDriverUser));
-    
+
+        // 2. Mock the security service to throw the expected exception when called with our data.
+        doThrow(new IllegalArgumentException("User with id " + nonDriverUser.getId() + " is not a DRIVER."))
+                .when(bookingSecurityService).validateDriverAssignment(booking.getId(), nonDriverUser.getId());
+
         // Act & Assert
-        // The service should now correctly identify that this user is not a driver
-        // and throw the exception from within your validateDriverAssignment method.
-        assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(booking.getId(), nonDriverUser.getId()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User with id 2 is not a DRIVER.");
-    
-        // Verify that the booking was not saved or altered
+                .hasMessage("User with id " + nonDriverUser.getId() + " is not a DRIVER.");
+
+        // Verify that the security service was called
+        verify(bookingSecurityService).validateDriverAssignment(booking.getId(), nonDriverUser.getId());
+
+        // Verify that because of the exception, the code never tried to find a booking, user, or save.
+        verify(bookingRepository, never()).findById(anyLong());
+        verify(userRepository, never()).findById(anyLong());
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
     @DisplayName("Test Assign Driver To Booking when driver has no cab")
     void whenAssignDriverToBooking_withDriverWithoutCab_thenThrowsResourceNotFoundException() {
-    // Arrange
-    // 1. Ensure the booking is in a PENDING state for the check to proceed
-    booking.setStatus(Booking.BookingStatus.PENDING);
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        // Arrange
+        // 1. Ensure the booking is in a PENDING state for the check to proceed
+        booking.setStatus(Booking.BookingStatus.PENDING);
+        given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
 
-    // 2. Mock a valid driver
-    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
+        // 2. Mock a valid driver
+        given(userRepository.findById(driverUser.getId())).willReturn(Optional.of(driverUser));
 
-    // 3. Mock the cab repository to find no cab for the given driver
-    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
+        // 3. Mock the cab repository to find no cab for the given driver
+        given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
 
-    // Act & Assert
-    // The validation logic should now fail when it cannot find a cab for the driver.
-    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessage("driver with id " + driverUser.getId() + " does not have an assigned cab");
+        // Act & Assert
+        // The validation logic should now fail when it cannot find a cab for the driver.
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(booking.getId(), driverUser.getId()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("driver with id " + driverUser.getId() + " does not have an assigned cab");
 
-    // Verify the booking was not updated
-    verify(bookingRepository, never()).save(any(Booking.class));
+        // Verify the booking was not updated
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
     @DisplayName("Test Assign Driver To Booking when cab is not available")
     void whenAssignDriverToBooking_withUnavailableCab_thenThrowsIllegalStateException() {
-    // Arrange
-    // 1. Ensure the booking is PENDING to pass the initial checks
-    booking.setStatus(Booking.BookingStatus.PENDING);
-    given(bookingRepository.findById(1L)).willReturn(Optional.of(booking));
+        // Arrange
+        // 1. Set the cab to the state that would cause a validation failure.
+        cab.setStatus(Cab.AvailabilityStatus.BOOKED);
 
-    // 2. Mock a valid driver
-    given(userRepository.findById(2L)).willReturn(Optional.of(driverUser));
+        // 2. Instruct the MOCKED security service to throw the expected exception.
+        // This simulates the behavior of the real validation logic failing.
+        doThrow(new IllegalStateException("The assigned driver is not currently available. Status: " + cab.getStatus()))
+                .when(bookingSecurityService).validateDriverAssignment(booking.getId(), driverUser.getId());
 
-    // 3. Set the driver's cab to a non-available status
-    cab.setStatus(Cab.AvailabilityStatus.BOOKED);
-    given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
+        // Act & Assert
+        // Now, when the service calls the mock, it will throw the exception we told it to.
+        assertThatThrownBy(() -> bookingService.assignDriverToBooking(booking.getId(), driverUser.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("The assigned driver is not currently available. Status: " + cab.getStatus());
 
-    // Act & Assert
-    // The validation should now fail because the cab's status is not AVAILABLE.
-    assertThatThrownBy(() -> bookingService.assignDriverToBooking(1L, 2L))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessage("The assigned driver is not currently available. Status: " + cab.getStatus());
-
-    // Verify the booking was not saved or modified
-    verify(bookingRepository, never()).save(any(Booking.class));
+        // Verify the security service was called, but the main logic was not.
+        verify(bookingSecurityService).validateDriverAssignment(booking.getId(), driverUser.getId());
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
@@ -610,16 +661,16 @@ class BookingServiceImplTest {
     void whenCancelBooking_isSuccessful_thenBookingIsCancelledAndCabIsAvailable() {
         // Arrange
         // 1. Set the booking to a state where it can be canceled.
-        // We assume the canBeCancelled() method on the Booking entity will return true.
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
 
         // 2. Mock the repository calls needed for the business logic.
-        // Note: We no longer mock SecurityContext or userRepository.findByEmail.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
         given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency and robustness
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
-        bookingResponse.setStatus(Booking.BookingStatus.CANCELLED.toString()); // Ensure response has correct status
+        bookingResponse.setStatus(Booking.BookingStatus.CANCELLED.toString());
 
         // Act
         BookingResponse cancelledBookingResponse = bookingService.cancelBooking(booking.getId());
