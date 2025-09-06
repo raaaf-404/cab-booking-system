@@ -661,16 +661,16 @@ class BookingServiceImplTest {
     void whenCancelBooking_isSuccessful_thenBookingIsCancelledAndCabIsAvailable() {
         // Arrange
         // 1. Set the booking to a state where it can be canceled.
-        // We assume the canBeCancelled() method on the Booking entity will return true.
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
 
         // 2. Mock the repository calls needed for the business logic.
-        // Note: We no longer mock SecurityContext or userRepository.findByEmail.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
         given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency and robustness
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
-        bookingResponse.setStatus(Booking.BookingStatus.CANCELLED.toString()); // Ensure response has correct status
+        bookingResponse.setStatus(Booking.BookingStatus.CANCELLED.toString());
 
         // Act
         BookingResponse cancelledBookingResponse = bookingService.cancelBooking(booking.getId());
