@@ -748,7 +748,9 @@ class BookingServiceImplTest {
 
         // 3. Mock the repository to return our driverless booking.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
         bookingResponse.setStatus(Booking.BookingStatus.CANCELLED.toString());
 
