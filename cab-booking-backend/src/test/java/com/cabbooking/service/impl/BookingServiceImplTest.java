@@ -780,16 +780,17 @@ class BookingServiceImplTest {
     @DisplayName("Test Start Ride - Success")
     void whenStartRide_withCorrectDriverAndConfirmedBooking_thenRideStarts() {
         // Arrange
-        // 1. The booking is already in a 'CONFIRMED' state from the setUp method.
-        // We'll ensure the driver is correctly assigned.
+        // 1. Set the booking to the required 'CONFIRMED' state.
         booking.setDriver(driverUser);
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
 
         // 2. Mock the necessary repository calls.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
-        bookingResponse.setStatus(Booking.BookingStatus.IN_PROGRESS.toString()); // Update response mock
+        bookingResponse.setStatus(Booking.BookingStatus.IN_PROGRESS.toString());
 
         // Act
         BookingResponse rideResponse = bookingService.startRide(booking.getId(), driverUser.getId());
@@ -804,7 +805,7 @@ class BookingServiceImplTest {
         verify(bookingRepository).save(bookingCaptor.capture());
         Booking savedBooking = bookingCaptor.getValue();
 
-        // 3. Verify the status and start time we're correctly set before saving.
+        // 3. Verify the status and start time were correctly set before saving.
         assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
         assertThat(savedBooking.getStartTime()).isNotNull();
         assertThat(savedBooking.getUpdatedAt()).isNotNull();
