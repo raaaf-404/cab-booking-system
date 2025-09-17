@@ -1096,14 +1096,16 @@ class BookingServiceImplTest {
 
         // 2. Mock the repository to return the booking.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency with other tests
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
         // Act
         BookingResponse updatedBookingResponse = bookingService.updatePaymentDetails(booking.getId(), paymentStatus, paymentId);
 
         // Assert
-        // 1. Verify the response object is not null.
+        // 1. Verify the response object is not null (optional but good).
         assertThat(updatedBookingResponse).isNotNull();
 
         // 2. Capture the booking object passed to the save method for detailed inspection.
