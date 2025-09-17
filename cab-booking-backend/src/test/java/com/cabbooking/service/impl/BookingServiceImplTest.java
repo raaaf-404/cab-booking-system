@@ -1063,7 +1063,8 @@ class BookingServiceImplTest {
         given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
 
         // 4. Mock the save and map operations for a successful completion.
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0)); // Use willAnswer for consistency
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
         bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString());
 
