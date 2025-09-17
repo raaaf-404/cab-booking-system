@@ -920,9 +920,11 @@ class BookingServiceImplTest {
         // 2. Mock the repository and service calls.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
         given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency with other tests
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
-        bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString()); // Update response mock
+        bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString());
 
         // Act
         BookingResponse rideResponse = bookingService.completeRide(booking.getId(), driverUser.getId());
@@ -1061,7 +1063,8 @@ class BookingServiceImplTest {
         given(cabRepository.findByDriver(driverUser)).willReturn(Optional.empty());
 
         // 4. Mock the save and map operations for a successful completion.
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0)); // Use willAnswer for consistency
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
         bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString());
 
@@ -1093,14 +1096,16 @@ class BookingServiceImplTest {
 
         // 2. Mock the repository to return the booking.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency with other tests
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
         // Act
         BookingResponse updatedBookingResponse = bookingService.updatePaymentDetails(booking.getId(), paymentStatus, paymentId);
 
         // Assert
-        // 1. Verify the response object is not null.
+        // 1. Verify the response object is not null (optional but good).
         assertThat(updatedBookingResponse).isNotNull();
 
         // 2. Capture the booking object passed to the save method for detailed inspection.
@@ -1127,7 +1132,9 @@ class BookingServiceImplTest {
 
         // 3. Mock the repository calls.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
         // Act
@@ -1159,7 +1166,9 @@ class BookingServiceImplTest {
 
         // 3. Mock the repository calls.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
         // Act
@@ -1202,40 +1211,44 @@ class BookingServiceImplTest {
     @DisplayName("Test Find Pending Bookings for Driver Assignment - Success")
     void whenFindPendingBookingsForDriverAssignment_andBookingsExist_thenReturnsBookingResponseList() {
         // Arrange
-        // 1. Create mock bookings that match the criteria (PENDING/CONFIRMED and no driver).
+        // 1. Create mock bookings that match the criteria (PENDING and no driver).
         Booking pendingBooking = new Booking();
         pendingBooking.setId(10L);
         pendingBooking.setStatus(Booking.BookingStatus.PENDING);
-        pendingBooking.setDriver(null);
 
-        Booking confirmedBooking = new Booking();
-        confirmedBooking.setId(11L);
-        confirmedBooking.setStatus(Booking.BookingStatus.CONFIRMED);
-        confirmedBooking.setDriver(null);
-
-        List<Booking> mockBookings = List.of(pendingBooking, confirmedBooking);
+        // This test is specifically for driver assignment, so we only need PENDING bookings.
+        List<Booking> mockBookings = List.of(pendingBooking);
+        List<Booking.BookingStatus> expectedStatuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
 
         // 2. Mock the repository to return our list when the specific query is called.
-        List<Booking.BookingStatus> expectedStatuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
         given(bookingRepository.findByStatusInAndDriverIsNull(expectedStatuses)).willReturn(mockBookings);
 
-        // 3. Mock the mapper to return a response for any booking object.
-        // We can use a generic response since we're not testing the mapping logic itself here.
-        given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(new BookingResponse());
+        // 3. Mock the mapper to perform a realistic mapping.
+        // This ensures we can verify the content of the final list.
+        given(bookingMapper.toBookingResponse(any(Booking.class))).willAnswer(invocation -> {
+            Booking source = invocation.getArgument(0);
+            BookingResponse response = new BookingResponse();
+            response.setId(source.getId());
+            response.setStatus(source.getStatus().name());
+            return response;
+        });
 
         // Act
         List<BookingResponse> result = bookingService.findPendingBookingsForDriverAssignment();
 
         // Assert
-        // 1. Verify that the result is not null and contains the correct number of items.
+        // 1. Verify the result list has the correct size and content.
         assertThat(result).isNotNull();
-        assertThat(result).hasSize(2);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(pendingBooking.getId());
+        assertThat(result.get(0).getStatus()).isEqualTo(Booking.BookingStatus.PENDING.name());
 
-        // 2. Verify that the repository method was called exactly once with the correct status list.
-        verify(bookingRepository, times(1)).findByStatusInAndDriverIsNull(expectedStatuses);
+
+        // 2. Verify that the repository method was called correctly.
+        verify(bookingRepository).findByStatusInAndDriverIsNull(expectedStatuses);
 
         // 3. Verify that the mapper was called for each booking found.
-        verify(bookingMapper, times(2)).toBookingResponse(any(Booking.class));
+        verify(bookingMapper, times(1)).toBookingResponse(any(Booking.class));
     }
 
     @Test
