@@ -920,9 +920,11 @@ class BookingServiceImplTest {
         // 2. Mock the repository and service calls.
         given(bookingRepository.findById(booking.getId())).willReturn(Optional.of(booking));
         given(cabRepository.findByDriver(driverUser)).willReturn(Optional.of(cab));
-        given(bookingRepository.save(any(Booking.class))).willReturn(booking);
+        // Use willAnswer for consistency with other tests
+        given(bookingRepository.save(any(Booking.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
-        bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString()); // Update response mock
+        bookingResponse.setStatus(Booking.BookingStatus.COMPLETED.toString());
 
         // Act
         BookingResponse rideResponse = bookingService.completeRide(booking.getId(), driverUser.getId());
