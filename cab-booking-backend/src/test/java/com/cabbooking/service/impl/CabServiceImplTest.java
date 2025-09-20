@@ -9,6 +9,7 @@ import com.cabbooking.dto.response.UserResponse;
 import com.cabbooking.model.User;
 import com.cabbooking.model.Cab;
 
+import com.cabbooking.service.CabService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.convert.DataSizeUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import javax.swing.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -111,7 +117,27 @@ private UserResponse driverResponse;
         cabResponse.setRatePerKm(cab.getRatePerKm());
     }
 
+    @Test
+    @DisplayName("Test Get Cab by Id with valid ID should return a cab")
+    void whenGetCabById_withValidId_thenReturnCabResponse() {
+        // Arrange
+        given(cabRepository.findById(cab.getId())).willReturn(Optional.of(cab));
+        given(cabMapper.toCabResponse(cab)).willReturn(cabResponse);
 
+        // Act
+        CabResponse foundCab = cabService.getCabById(cab.getId());
+
+        // Assert
+        // 1. Verify the response object has the correct data, asserting against the original source object.
+        assertThat(foundCab).isNotNull();
+        assertThat(foundCab.getId()).isEqualTo(cab.getId());
+        assertThat(foundCab.getLicensePlateNumber()).isEqualTo(cab.getLicensePlateNumber());
+        assertThat(foundCab.getVehicleType()).isEqualTo(cab.getVehicleType().name());
+
+        // 2. Verify that the repository and mapper were called correctly.
+        verify(cabRepository).findById(cab.getId());
+        verify(cabMapper).toCabResponse(cab);
+    }
 
 
 }
