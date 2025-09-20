@@ -41,7 +41,6 @@ public class CabServiceImpl implements CabService {
         if (cabRepository.findByLicensePlateNumber(request.getLicensePlateNumber()).isPresent()) {
             throw new CabAlreadyExistException("Cab with license plate number " + request.getLicensePlateNumber() + " already exists.");
         }
-
         //Register Cab
         Cab cab = new Cab();
         cab.setDriver(driver);
@@ -55,6 +54,7 @@ public class CabServiceImpl implements CabService {
         cab.setManufacturingYear(request.getManufacturingYear());
         cab.setSeatingCapacity(request.getSeatingCapacity());
         cab.setIsAirConditioned(request.getIsAirConditioned());
+        cab.setStatus(Cab.AvailabilityStatus.OFFLINE);
 
         Cab savedCab = cabRepository.save(cab);
 

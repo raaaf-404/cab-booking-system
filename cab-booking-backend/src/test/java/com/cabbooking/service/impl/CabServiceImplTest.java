@@ -1,5 +1,6 @@
 package com.cabbooking.service.impl;
 
+import com.cabbooking.dto.request.CabRegistrationRequest;
 import com.cabbooking.mapper.CabMapper;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.repository.UserRepository;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import com.cabbooking.service.UserService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -51,6 +53,8 @@ private CabMapper cabMapper;
 private UserRepository userRepository;
 @Mock
 private BookingRepository bookingRepository;
+@Mock
+private UserService userService;
 @InjectMocks
 private  CabServiceImpl cabService;
 
@@ -59,6 +63,7 @@ private User driver;
 private Cab cab;
 private CabResponse cabResponse;
 private UserResponse driverResponse;
+private CabRegistrationRequest cabRequest;
 
     @BeforeEach
     void setup() {
@@ -115,6 +120,56 @@ private UserResponse driverResponse;
         cabResponse.setIsMeterFare(cab.getIsMeterFare());
         cabResponse.setBaseFare(cab.getBaseFare());
         cabResponse.setRatePerKm(cab.getRatePerKm());
+
+        cabRequest = CabRegistrationRequest.builder()
+                .driverId(driver.getId())
+                .licensePlateNumber("NCR-1234")
+                .vehicleType(Cab.VehicleType.SEDAN.name())
+                .model("Toyota Vios")
+                .color("Silver")
+                .manufacturingYear(2023)
+                .seatingCapacity(4)
+                .isAirConditioned(true)
+                .isMeterFare(true)
+                .baseFare(new BigDecimal("45.00"))
+                .ratePerKm(new BigDecimal("15.50"))
+                .build();
+    }
+
+
+    @Test
+    @DisplayName("Test Register Cab with valid request should Succeed and return CabResponse")
+    void whenRegisterCab_withValidRequest_thenReturnCabResponse() {
+        //Arrange
+        // Mock dependencies to simulate a successful registration path.
+        given(userService.findAndValidateDriverById(cabRequest.getDriverId())).willReturn(driver);
+        given(cabRepository.findByLicensePlateNumber(cabRequest.getLicensePlateNumber())).willReturn(Optional.empty());
+
+        // When save is called with any Cab object, return that same object.
+        given(cabRepository.save(any(Cab.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        // When the mapper is called with any Cab object, return the pre-configured response DTO.
+        given(cabMapper.toCabResponse(any(Cab.class))).willReturn(cabResponse);
+
+        //Act
+        CabResponse result = cabService.registerCab(cabRequest);
+
+        //Assert
+        // 1. Verify the final result is the one returned by the mocked mapper.
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(cabResponse);
+
+        // 2. Capture the Cab entity passed to the save method to verify its contents.
+        ArgumentCaptor<Cab> cabCaptor = ArgumentCaptor.forClass(Cab.class);
+        verify(cabRepository).save(cabCaptor.capture());
+        Cab savedCab = cabCaptor.getValue();
+
+        // 3. Assert that the service correctly built the Cab entity from the request.
+        assertThat(savedCab.getLicensePlateNumber()).isEqualTo(cabRequest.getLicensePlateNumber());
+        assertThat(savedCab.getDriver()).isEqualTo(driver);
+        assertThat(savedCab.getVehicleType()).isEqualTo(Cab.VehicleType.SEDAN);
+        assertThat(savedCab.getModel()).isEqualTo(cabRequest.getModel());
+        assertThat(savedCab.getStatus()).isEqualTo(Cab.AvailabilityStatus.OFFLINE);
     }
 
     @Test

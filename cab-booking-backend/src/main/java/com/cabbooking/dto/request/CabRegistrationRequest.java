@@ -5,7 +5,10 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import lombok.Data;
 
+import lombok.Builder;
+
 @Data
+@Builder
 public class CabRegistrationRequest {
 
     @NotBlank(message = "License plate number is required")
