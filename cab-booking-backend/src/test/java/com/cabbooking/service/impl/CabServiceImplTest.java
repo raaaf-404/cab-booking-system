@@ -194,5 +194,31 @@ private CabRegistrationRequest cabRequest;
         verify(cabMapper).toCabResponse(cab);
     }
 
+    @Test
+    @DisplayName("Test Get Cab by License Plate with valid License Plate should succeed and return a cab response")
+    void whenGetCabByLicensePlate_withValidLicensePlate_thenReturnCabResponse() {
+        // Arrange
+        String licensePlate = cab.getLicensePlateNumber();
+
+        // Mock the repository to return the specific cab.
+        given(cabRepository.findByLicensePlateNumber(licensePlate)).willReturn(Optional.of(cab));
+
+        // Mock the mapper to return the expected response DTO.
+        given(cabMapper.toCabResponse(cab)).willReturn(cabResponse);
+
+        // Act
+        CabResponse foundCab = cabService.getCabByLicensePlate(licensePlate);
+
+        // Assert
+        // 1. Assert that the key fields of the returned object match the source entity.
+        assertThat(foundCab).isNotNull();
+        assertThat(foundCab.getId()).isEqualTo(cab.getId());
+        assertThat(foundCab.getLicensePlateNumber()).isEqualTo(cab.getLicensePlateNumber());
+        assertThat(foundCab.getDriver().getId()).isEqualTo(driver.getId());
+
+        // 2. Verify that the repository and mapper methods were called correctly.
+        verify(cabRepository).findByLicensePlateNumber(licensePlate);
+        verify(cabMapper).toCabResponse(cab);
+    }
 
 }
