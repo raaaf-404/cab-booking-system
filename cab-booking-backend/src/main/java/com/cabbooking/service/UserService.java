@@ -11,5 +11,5 @@ public interface UserService extends UserDetailsService {
     UserResponse registerUser(UserRegistrationRequest registrationRequest);
     Optional<UserResponse> getUserById(Long userId);
     Optional<User> findByEmail(String email);
-    
+    User findAndValidateDriverById(Long driverId);
 }
