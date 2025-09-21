@@ -1,6 +1,7 @@
 package com.cabbooking.service.impl;
 
 import com.cabbooking.dto.request.CabRegistrationRequest;
+import com.cabbooking.dto.request.CabUpdateRequest;
 import com.cabbooking.mapper.CabMapper;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.repository.UserRepository;
@@ -219,6 +220,45 @@ private CabRegistrationRequest cabRequest;
         // 2. Verify that the repository and mapper methods were called correctly.
         verify(cabRepository).findByLicensePlateNumber(licensePlate);
         verify(cabMapper).toCabResponse(cab);
+    }
+
+    @Test
+    @DisplayName("Test Update Cab Details with valid data should succeed")
+    void whenUpdateCabDetails_withValidData_thenCabIsUpdatedSuccessfully() {
+        // Arrange
+        // 1. Create a "new" driver to be assigned during the update.
+        User newDriver = new User();
+        newDriver.setId(2L);
+        newDriver.setName("New Driver");
+        newDriver.addRole(User.Role.DRIVER);
+
+        // 2. Create the update request object with a representative set of new data.
+        CabUpdateRequest updateRequest = new CabUpdateRequest();
+        updateRequest.setModel("Honda City"); // Change a String
+        updateRequest.setSeatingCapacity(5);  // Change an Integer
+        updateRequest.setBaseFare(new BigDecimal("50.00")); // Change a BigDecimal
+        updateRequest.setDriverId(newDriver.getId()); // Change the driver relationship
+
+        // 3. Mock the service dependencies.
+        given(cabRepository.findById(cab.getId())).willReturn(Optional.of(cab));
+        given(userService.findAndValidateDriverById(newDriver.getId())).willReturn(newDriver);
+        given(cabRepository.save(any(Cab.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(cabMapper.toCabResponse(any(Cab.class))).willReturn(cabResponse);
+
+        // Act
+        cabService.updateCabDetails(cab.getId(), updateRequest);
+
+        // Assert
+        // 1. Capture the Cab entity that was saved to verify its state.
+        ArgumentCaptor<Cab> cabCaptor = ArgumentCaptor.forClass(Cab.class);
+        verify(cabRepository).save(cabCaptor.capture());
+        Cab savedCab = cabCaptor.getValue();
+
+        // 2. Verify that the representative fields were updated correctly from the request.
+        assertThat(savedCab.getModel()).isEqualTo(updateRequest.getModel());
+        assertThat(savedCab.getSeatingCapacity()).isEqualTo(updateRequest.getSeatingCapacity());
+        assertThat(savedCab.getBaseFare()).isEqualByComparingTo(updateRequest.getBaseFare());
+        assertThat(savedCab.getDriver()).isEqualTo(newDriver);
     }
 
 }
