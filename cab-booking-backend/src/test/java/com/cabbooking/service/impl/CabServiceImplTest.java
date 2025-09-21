@@ -2,6 +2,7 @@ package com.cabbooking.service.impl;
 
 import com.cabbooking.dto.request.CabRegistrationRequest;
 import com.cabbooking.dto.request.CabUpdateRequest;
+import com.cabbooking.dto.request.LocationUpdateRequest;
 import com.cabbooking.mapper.CabMapper;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.repository.UserRepository;
@@ -259,6 +260,38 @@ private CabRegistrationRequest cabRequest;
         assertThat(savedCab.getSeatingCapacity()).isEqualTo(updateRequest.getSeatingCapacity());
         assertThat(savedCab.getBaseFare()).isEqualByComparingTo(updateRequest.getBaseFare());
         assertThat(savedCab.getDriver()).isEqualTo(newDriver);
+    }
+
+    @Test
+    @DisplayName("Test Update Cab Location with valid data should succeed")
+    void whenUpdateCabLocation_withValidData_thenCabLocationIsUpdatedSuccessfully() {
+        // Arrange
+        // 1. Create the request object with new, specific location data.
+        LocationUpdateRequest updateLocationRequest = new LocationUpdateRequest();
+        updateLocationRequest.setLatitude(14.5547);  // New latitude (e.g., Makati City)
+        updateLocationRequest.setLongitude(121.0244); // New longitude
+
+        // 2. Mock the service dependencies.
+        given(cabRepository.findById(cab.getId())).willReturn(Optional.of(cab));
+        given(cabRepository.save(any(Cab.class))).willAnswer(invocation -> invocation.getArgument(0));
+        // Correctly return the cabResponse object, not a matcher.
+        given(cabMapper.toCabResponse(any(Cab.class))).willReturn(cabResponse);
+
+        // Act
+        cabService.updateCabLocation(cab.getId(), updateLocationRequest);
+
+        // Assert
+        // 1. Capture the Cab entity that was passed to the save method.
+        ArgumentCaptor<Cab> cabCaptor = ArgumentCaptor.forClass(Cab.class);
+        verify(cabRepository).save(cabCaptor.capture());
+        Cab savedCab = cabCaptor.getValue();
+
+        // 2. Verify that the captured entity's location was updated correctly.
+        assertThat(savedCab.getLatitude()).isEqualTo(updateLocationRequest.getLatitude());
+        assertThat(savedCab.getLongitude()).isEqualTo(updateLocationRequest.getLongitude());
+
+        // 3. Verify the mapper was called.
+        verify(cabMapper).toCabResponse(savedCab);
     }
 
 }
