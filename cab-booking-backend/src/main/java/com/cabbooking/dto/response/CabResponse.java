@@ -3,6 +3,7 @@ package com.cabbooking.dto.response;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
@@ -11,6 +12,7 @@ import com.cabbooking.dto.response.UserResponse;
 
 @Data
 @NoArgsConstructor
+@Builder
 @AllArgsConstructor
 public class CabResponse {
     private Long id;

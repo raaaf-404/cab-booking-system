@@ -9,12 +9,12 @@ import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
 import com.cabbooking.dto.request.LocationUpdateRequest;
 import com.cabbooking.dto.response.CabResponse;
 import com.cabbooking.model.Cab;
-import com.cabbooking.repository.UserRepository;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.model.User;
 import com.cabbooking.mapper.CabMapper;
 import com.cabbooking.exception.CabAlreadyExistException;
 import com.cabbooking.exception.ResourceNotFoundException;
+import com.cabbooking.service.UserService;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,30 +30,17 @@ import java.util.stream.Collectors;
 public class CabServiceImpl implements CabService {
     private final CabRepository cabRepository;
     private final CabMapper cabMapper;
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final BookingRepository bookingRepository;
-
-    private User validateAndGetDriverById(Long driverId) {
-
-        User driver = userRepository.findById(driverId)
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
-        
-        if (!driver.getRole().contains(User.Role.DRIVER)) {
-            throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
-        }
-
-        return driver;
-        }
 
     @Transactional
     @Override
     public CabResponse registerCab(CabRegistrationRequest request) {
-        User driver = validateAndGetDriverById(request.getDriverId());
+        User driver = userService.findAndValidateDriverById(request.getDriverId());
         
         if (cabRepository.findByLicensePlateNumber(request.getLicensePlateNumber()).isPresent()) {
-            throw new CabAlreadyExistException("Cab with license plate numebr " + request.getLicensePlateNumber() + " already exists.");
+            throw new CabAlreadyExistException("Cab with license plate number " + request.getLicensePlateNumber() + " already exists.");
         }
-
         //Register Cab
         Cab cab = new Cab();
         cab.setDriver(driver);
@@ -67,6 +54,7 @@ public class CabServiceImpl implements CabService {
         cab.setManufacturingYear(request.getManufacturingYear());
         cab.setSeatingCapacity(request.getSeatingCapacity());
         cab.setIsAirConditioned(request.getIsAirConditioned());
+        cab.setStatus(Cab.AvailabilityStatus.OFFLINE);
 
         Cab savedCab = cabRepository.save(cab);
 
@@ -96,7 +84,7 @@ public class CabServiceImpl implements CabService {
             .orElseThrow(() -> new ResourceNotFoundException("Cab not found with an id: " + cabId));
 
       User driverToSet = Optional.ofNullable(request.getDriverId())
-            .map(this::validateAndGetDriverById)
+            .map(userService::findAndValidateDriverById)
             .orElse(null);
 
       cab.updateFromRequest(request, driverToSet);
@@ -136,7 +124,7 @@ public class CabServiceImpl implements CabService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cab not found with id: " + cabId));
 
         Long driverId = request.getDriverId();
-        User driver = validateAndGetDriverById(driverId);
+        User driver = userService.findAndValidateDriverById(driverId);
 
         if (cab.getDriver() != null) {
             throw new IllegalStateException("Cab is already assigned to a driver.");
@@ -203,7 +191,7 @@ public class CabServiceImpl implements CabService {
         cab.validateForDeletion();
 
         if (bookingRepository.existsByCab(cab)) {
-            throw new IllegalStateException("Cannor delete cab with id " + cabId + "as it has associated booking records.");
+            throw new IllegalStateException("Cannot delete cab with id " + cabId + "as it has associated booking records.");
         }
 
         cabRepository.delete(cab);

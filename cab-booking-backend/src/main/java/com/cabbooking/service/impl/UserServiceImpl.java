@@ -2,6 +2,7 @@ package com.cabbooking.service.impl;
 
 import com.cabbooking.dto.request.UserRegistrationRequest;
 import com.cabbooking.dto.response.UserResponse;
+import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.exception.UserAlreadyExistsException;
 import com.cabbooking.mapper.UserMapper; // Import UserMapper
 import com.cabbooking.model.User;
@@ -100,6 +101,15 @@ public class UserServiceImpl implements UserService {
                 user.getEmail(), user.getPassword(), user.getIsActive(), true, true, true, authorities);
     }
 
-    // Implement other methods defined in UserService interface
-    // e.g., updateUserProfile, deleteUser, etc.
+
+    @Override
+    public User findAndValidateDriverById(Long driverId) {
+        User driver = userRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
+
+        if (!driver.getRole().contains(User.Role.DRIVER)) {
+            throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
+        }
+        return driver;
+    }
 }
