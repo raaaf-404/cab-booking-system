@@ -6,7 +6,7 @@ import com.cabbooking.model.Cab;
 
 /**
  * DTO for updating the availability status of a Cab.
- * Accepts the status as a String, which will be converted to an enum in the service layer.
+ * Accepts the Cab enum status.
  */
 @Data
 public class CabUpdateAvailabilityStatusRequest {

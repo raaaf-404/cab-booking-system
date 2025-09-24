@@ -1,6 +1,7 @@
 package com.cabbooking.service.impl;
 
 import com.cabbooking.dto.request.CabRegistrationRequest;
+import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
 import com.cabbooking.dto.request.CabUpdateRequest;
 import com.cabbooking.dto.request.LocationUpdateRequest;
 import com.cabbooking.mapper.CabMapper;
@@ -292,6 +293,34 @@ private CabRegistrationRequest cabRequest;
 
         // 3. Verify the mapper was called.
         verify(cabMapper).toCabResponse(savedCab);
+    }
+
+    @Test
+    @DisplayName("Test Update Cab Availability Status with valid data should succeed")
+    void whenUpdateCabAvailabilityStatus_withValidData_thenCabStatusIsUpdatedSuccessfully() {
+        // Arrange
+        // 1. Create the request with the new status.
+        CabUpdateAvailabilityStatusRequest statusRequest = new CabUpdateAvailabilityStatusRequest();
+        statusRequest.setStatus(Cab.AvailabilityStatus.MAINTENANCE); // Use a different status to test the change
+
+        // 2. Mock the service dependencies.
+        given(cabRepository.findById(cab.getId())).willReturn(Optional.of(cab));
+        given(cabRepository.save(any(Cab.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(cabMapper.toCabResponse(any(Cab.class))).willReturn(cabResponse);
+
+        // Act
+        cabService.updateCabAvailabilityStatus(cab.getId(), statusRequest);
+
+        // Assert
+        // 1. Capture the Cab entity that was passed to the save method.
+        ArgumentCaptor<Cab> cabCaptor = ArgumentCaptor.forClass(Cab.class);
+        verify(cabRepository).save(cabCaptor.capture());
+
+        // 2. Verify that the captured entity's status was updated correctly.
+        assertThat(cabCaptor.getValue().getStatus()).isEqualTo(statusRequest.getStatus());
+
+        // 3. Verify the mapper was called with the updated cab.
+        verify(cabMapper).toCabResponse(cabCaptor.getValue());
     }
 
 }

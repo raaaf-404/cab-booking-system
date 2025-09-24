@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
 import com.cabbooking.dto.response.UserResponse;
+import com.cabbooking.model.Cab.AvailabilityStatus;
 
 @Data
 @NoArgsConstructor
@@ -21,7 +22,7 @@ public class CabResponse {
     private Double latitude;
     private Double longitude; 
     private LocalDateTime lastLocationUpdate;
-    private String status;
+    private AvailabilityStatus status;
     private String vehicleType;
     private Boolean isMeterFare;
     private BigDecimal baseFare;
