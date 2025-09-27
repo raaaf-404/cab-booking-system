@@ -4,6 +4,7 @@ import com.cabbooking.dto.request.CabRegistrationRequest;
 import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
 import com.cabbooking.dto.request.CabUpdateRequest;
 import com.cabbooking.dto.request.LocationUpdateRequest;
+import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.mapper.CabMapper;
 import com.cabbooking.repository.BookingRepository;
 import com.cabbooking.repository.UserRepository;
@@ -114,7 +115,7 @@ private CabRegistrationRequest cabRequest;
         cabResponse.setDriver(driverResponse); // Set the nested DTO
         cabResponse.setLatitude(cab.getLatitude());
         cabResponse.setLongitude(cab.getLongitude());
-        cabResponse.setStatus(cab.getStatus().name()); // Convert Enum to String
+        cabResponse.setStatus(cab.getStatus());
         cabResponse.setVehicleType(cab.getVehicleType().name()); // Convert Enum to String
         cabResponse.setModel(cab.getModel());
         cabResponse.setColor(cab.getColor());
@@ -187,6 +188,23 @@ private CabRegistrationRequest cabRequest;
         assertThatThrownBy(() -> cabService.registerCab(cabRequest))
                 .isInstanceOf(CabAlreadyExistException.class)
                 .hasMessageContaining("Cab with license plate number " + cabRequest.getLicensePlateNumber() + " already exists.");
+
+        // Verify that save was never called
+        verify(cabRepository, never()).save(any(Cab.class));
+    }
+
+    @Test
+    @DisplayName("Test Register Cab with invalid vehicle type should throw IllegalArgumentException")
+    void whenRegisterCab_withInvalidVehicleType_thenThrowIllegalArgumentException() {
+        // Arrange
+        cabRequest.setVehicleType("MOTORCYCLE"); // Invalid vehicle type
+        given(userService.findAndValidateDriverById(cabRequest.getDriverId())).willReturn(driver);
+        given(cabRepository.findByLicensePlateNumber(cabRequest.getLicensePlateNumber())).willReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> cabService.registerCab(cabRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("No enum constant");
 
         // Verify that save was never called
         verify(cabRepository, never()).save(any(Cab.class));
