@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import com.cabbooking.exception.CabAlreadyExistException;
 import com.cabbooking.service.UserService;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -173,6 +174,22 @@ private CabRegistrationRequest cabRequest;
         assertThat(savedCab.getVehicleType()).isEqualTo(Cab.VehicleType.SEDAN);
         assertThat(savedCab.getModel()).isEqualTo(cabRequest.getModel());
         assertThat(savedCab.getStatus()).isEqualTo(Cab.AvailabilityStatus.OFFLINE);
+    }
+
+    @Test
+    @DisplayName("Test Register Cab with existing license plate should throw CabAlreadyExistException")
+    void whenRegisterCab_withExistingLicensePlate_thenThrowCabAlreadyExistException() {
+        // Arrange
+        given(userService.findAndValidateDriverById(cabRequest.getDriverId())).willReturn(driver);
+        given(cabRepository.findByLicensePlateNumber(cabRequest.getLicensePlateNumber())).willReturn(Optional.of(cab));
+
+        // Act & Assert
+        assertThatThrownBy(() -> cabService.registerCab(cabRequest))
+                .isInstanceOf(CabAlreadyExistException.class)
+                .hasMessageContaining("Cab with license plate number " + cabRequest.getLicensePlateNumber() + " already exists.");
+
+        // Verify that save was never called
+        verify(cabRepository, never()).save(any(Cab.class));
     }
 
     @Test
