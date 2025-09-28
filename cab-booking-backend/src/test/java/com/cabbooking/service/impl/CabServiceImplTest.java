@@ -1,9 +1,6 @@
 package com.cabbooking.service.impl;
 
-import com.cabbooking.dto.request.CabRegistrationRequest;
-import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
-import com.cabbooking.dto.request.CabUpdateRequest;
-import com.cabbooking.dto.request.LocationUpdateRequest;
+import com.cabbooking.dto.request.*;
 import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.mapper.CabMapper;
 import com.cabbooking.repository.BookingRepository;
@@ -15,11 +12,13 @@ import com.cabbooking.model.User;
 import com.cabbooking.model.Cab;
 
 import com.cabbooking.service.CabService;
+import org.hibernate.mapping.Any;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.aggregator.ArgumentAccessException;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import com.cabbooking.exception.CabAlreadyExistException;
@@ -358,4 +357,40 @@ private CabRegistrationRequest cabRequest;
         verify(cabMapper).toCabResponse(cabCaptor.getValue());
     }
 
+    @Test
+    @DisplayName("Test Assign Driver To Cab with valid data should succeed")
+    void whenAssignDriverToCab_withValidData_thenDriverShouldBeAssignedToCabSuccessfully() {
+        // Arrange
+        // 1. Create the request object for the action.
+        DriverAssignmentRequest assignmentRequest = new DriverAssignmentRequest();
+        assignmentRequest.setDriverId(driver.getId());
+
+        // 2. Set the initial state of the cab: it must have no driver to start.
+        cab.setDriver(null);
+
+        // 3. Mock all the dependencies for the success path.
+        given(cabRepository.findById(cab.getId())).willReturn(Optional.of(cab));
+        given(userService.findAndValidateDriverById(assignmentRequest.getDriverId())).willReturn(driver);
+        given(cabRepository.findByDriver(driver)).willReturn(Optional.empty()); // Simulate driver is not assigned to another cab
+        given(cabRepository.save(any(Cab.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(cabMapper.toCabResponse(any(Cab.class))).willReturn(cabResponse);
+
+        // Act
+        // Execute the service method being tested.
+        CabResponse updatedCab = cabService.assignDriverToCab(cab.getId(), assignmentRequest);
+
+        // Assert
+        // 1. Verify the final response object is correct.
+        assertThat(updatedCab).isNotNull();
+        assertThat(updatedCab).isEqualTo(cabResponse);
+
+        // 2. Capture the Cab entity that was saved to verify its state.
+        ArgumentCaptor<Cab> cabCaptor = ArgumentCaptor.forClass(Cab.class);
+        verify(cabRepository).save(cabCaptor.capture());
+        Cab savedCab = cabCaptor.getValue();
+
+        // 3. Verify the driver was assigned AND the status was correctly updated.
+        assertThat(savedCab.getDriver()).isEqualTo(driver);
+        assertThat(savedCab.getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
+    }
 }
