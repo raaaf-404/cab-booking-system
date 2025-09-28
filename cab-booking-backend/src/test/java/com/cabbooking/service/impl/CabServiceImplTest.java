@@ -232,6 +232,21 @@ private CabRegistrationRequest cabRequest;
     }
 
     @Test
+    @DisplayName("Test Get Cab by Id with non-existent ID should throw ResourceNotFoundException")
+    void whenGetCabById_withNonExistentId_thenThrowResourceNotFoundException() {
+        // Arrange
+        long nonExistentId = 999L;
+        given(cabRepository.findById(nonExistentId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> cabService.getCabById(nonExistentId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Cab not found with id: " + nonExistentId);
+
+        verify(cabMapper, never()).toCabResponse(any(Cab.class));
+    }
+
+    @Test
     @DisplayName("Test Get Cab by License Plate with valid License Plate should succeed and return a cab response")
     void whenGetCabByLicensePlate_withValidLicensePlate_thenReturnCabResponse() {
         // Arrange
@@ -244,6 +259,7 @@ private CabRegistrationRequest cabRequest;
         given(cabMapper.toCabResponse(cab)).willReturn(cabResponse);
 
         // Act
+
         CabResponse foundCab = cabService.getCabByLicensePlate(licensePlate);
 
         // Assert
