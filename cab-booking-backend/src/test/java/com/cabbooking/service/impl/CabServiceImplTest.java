@@ -409,4 +409,28 @@ private CabRegistrationRequest cabRequest;
         assertThat(savedCab.getDriver()).isEqualTo(driver);
         assertThat(savedCab.getStatus()).isEqualTo(Cab.AvailabilityStatus.AVAILABLE);
     }
+
+    @Test
+    @DisplayName("Test Remove Driver From Cab with valid cab id should succeed")
+    void whenRemoveDriverFromCab_withValidCabId_thenSuccessAndCabHasNoDriver() {
+        // Arrange
+        // 1. Ensure the cab has a driver to begin with (this is handled by the setup method).
+        // 2. Mock the service dependencies.
+        given(cabRepository.findById(cab.getId())).willReturn(Optional.of(cab));
+        given(cabRepository.save(any(Cab.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(cabMapper.toCabResponse(any(Cab.class))).willReturn(cabResponse);
+
+        // Act
+        cabService.removeDriverFromCab(cab.getId());
+
+        // Assert
+        // 1. Capture the Cab entity that was saved to verify its final state.
+        ArgumentCaptor<Cab> cabCaptor = ArgumentCaptor.forClass(Cab.class);
+        verify(cabRepository).save(cabCaptor.capture());
+        Cab savedCab = cabCaptor.getValue();
+
+        // 2. Verify that the driver was removed AND the status was updated to OFFLINE.
+        assertThat(savedCab.getDriver()).isNull();
+        assertThat(savedCab.getStatus()).isEqualTo(Cab.AvailabilityStatus.OFFLINE);
+    }
 }
