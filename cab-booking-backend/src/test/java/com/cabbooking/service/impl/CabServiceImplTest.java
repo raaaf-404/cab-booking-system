@@ -433,4 +433,38 @@ private CabRegistrationRequest cabRequest;
         assertThat(savedCab.getDriver()).isNull();
         assertThat(savedCab.getStatus()).isEqualTo(Cab.AvailabilityStatus.OFFLINE);
     }
+
+    @Test
+    @DisplayName("Test Find Available Cabs with a specific vehicle type should succeed and return a list of cab responses")
+    void whenFindAvailableCabs_withVehicleType_thenSuccessAndCallsCorrectRepositoryMethod() {
+        // Arrange
+        // 1. Define the specific criteria for the search.
+        Cab.VehicleType specificType = Cab.VehicleType.SEDAN;
+        Cab.AvailabilityStatus expectedStatus = Cab.AvailabilityStatus.AVAILABLE;
+
+        // 2. Create a mock list of cabs that the repository will return.
+        List<Cab> mockCabs = List.of(cab); // Using the 'cab' from setup
+
+        // 3. Mock the repository to return the list for the specific query.
+        given(cabRepository.findByVehicleTypeAndStatus(specificType, expectedStatus)).willReturn(mockCabs);
+        given(cabMapper.toCabResponse(any(Cab.class))).willReturn(cabResponse);
+
+        // Act
+        List<CabResponse> result = cabService.findAvailableCabs(specificType);
+
+        // Assert
+        // 1. Verify that the result list contains the mapped objects.
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(cabResponse);
+
+        // 2. Verify the correct repository method was called with the correct arguments.
+        verify(cabRepository).findByVehicleTypeAndStatus(specificType, expectedStatus);
+
+        // 3. CRUCIALLY, verify the other repository method was NEVER called.
+        verify(cabRepository, never()).findByStatus(any(Cab.AvailabilityStatus.class));
+
+        // 4. Verify the mapper was called.
+        verify(cabMapper).toCabResponse(cab);
+    }
 }
