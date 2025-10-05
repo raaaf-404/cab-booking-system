@@ -467,4 +467,27 @@ private CabRegistrationRequest cabRequest;
         // 4. Verify the mapper was called.
         verify(cabMapper).toCabResponse(cab);
     }
+
+    @Test
+    @DisplayName("Test Find Available Cabs with a null vehicle type succeed and return a list of cab responses")
+    void whenFindAvailableCabs_withNullVehicleType_thenSuccessAndCallsCorrectRepositoryMethod() {
+        //Arrange
+        Cab.AvailabilityStatus expectedStatus = Cab.AvailabilityStatus.AVAILABLE;
+        List<Cab> expectedList = List.of(cab);
+
+        given(cabRepository.findByStatus(expectedStatus)).willReturn((expectedList));
+        given(cabMapper.toCabResponse(any(Cab.class))).willReturn(cabResponse);
+
+        //Act
+        List<CabResponse> result = cabService.findAvailableCabs(null);
+
+        //Assert
+        assertThat(result ).isNotNull();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(cabResponse);
+
+        verify(cabRepository).findByStatus(expectedStatus);
+        verify(cabRepository, never()).findByVehicleTypeAndStatus(any(Cab.VehicleType.class), any(Cab.AvailabilityStatus.class));
+        verify(cabMapper).toCabResponse(cab);
+    }
 }

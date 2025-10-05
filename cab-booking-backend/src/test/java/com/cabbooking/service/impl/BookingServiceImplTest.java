@@ -805,7 +805,7 @@ class BookingServiceImplTest {
         verify(bookingRepository).save(bookingCaptor.capture());
         Booking savedBooking = bookingCaptor.getValue();
 
-        // 3. Verify the status and start time were correctly set before saving.
+        // 3. Verify the status and start time we're correctly set before saving.
         assertThat(savedBooking.getStatus()).isEqualTo(Booking.BookingStatus.IN_PROGRESS);
         assertThat(savedBooking.getStartTime()).isNotNull();
         assertThat(savedBooking.getUpdatedAt()).isNotNull();
