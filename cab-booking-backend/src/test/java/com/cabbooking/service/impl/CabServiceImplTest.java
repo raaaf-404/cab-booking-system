@@ -45,6 +45,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.math.BigDecimal;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 
 @ExtendWith(MockitoExtension.class)
 class CabServiceImplTest {
@@ -488,6 +493,40 @@ private CabRegistrationRequest cabRequest;
 
         verify(cabRepository).findByStatus(expectedStatus);
         verify(cabRepository, never()).findByVehicleTypeAndStatus(any(Cab.VehicleType.class), any(Cab.AvailabilityStatus.class));
+        verify(cabMapper).toCabResponse(cab);
+    }
+
+    @Test
+    @DisplayName("Test Get All Cabs should return a paginated list of cab responses")
+    void whenGetAllCabs_thenReturnsPageOfCabResponses() {
+        // Arrange
+        // 1. Define the pagination request.
+        Pageable pageable = PageRequest.of(0, 10); // Requesting page 0 with 10 items.
+
+        // 2. Create the list of entities and the Page object that the repository will return.
+        List<Cab> cabList = List.of(cab); // Using the 'cab' from the setup
+        Page<Cab> cabPage = new PageImpl<>(cabList, pageable, cabList.size());
+
+        // 3. Mock the repository and mapper calls.
+        given(cabRepository.findAll(pageable)).willReturn(cabPage);
+        given(cabMapper.toCabResponse(cab)).willReturn(cabResponse);
+
+        // Act
+        Page<CabResponse> resultPage = cabService.getAllCabs(pageable);
+
+        // Assert
+        // 1. Verify the content of the returned page.
+        assertThat(resultPage).isNotNull();
+        assertThat(resultPage.getContent()).hasSize(1);
+        assertThat(resultPage.getContent().get(0)).isEqualTo(cabResponse);
+
+        // 2. Verify the pagination details are correct.
+        assertThat(resultPage.getTotalElements()).isEqualTo(1);
+        assertThat(resultPage.getNumber()).isEqualTo(0);
+        assertThat(resultPage.getSize()).isEqualTo(10);
+
+        // 3. Verify that the repository and mapper were called correctly.
+        verify(cabRepository).findAll(pageable);
         verify(cabMapper).toCabResponse(cab);
     }
 }

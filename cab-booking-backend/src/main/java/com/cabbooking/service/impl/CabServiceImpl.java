@@ -174,13 +174,13 @@ public class CabServiceImpl implements CabService {
                 .collect(Collectors.toList());
     }
 
-
     @Transactional(readOnly = true)
     @Override
     public Page<CabResponse> getAllCabs(Pageable pageable) {
         Page<Cab> cabsPage = cabRepository.findAll(pageable);
         return cabsPage.map(cabMapper::toCabResponse);
     }
+
     @Transactional
     @Override
     public void deleteCab(Long cabId) {
