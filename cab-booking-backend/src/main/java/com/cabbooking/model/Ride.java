@@ -1,5 +1,6 @@
 package com.cabbooking.model;
 import jakarta.persistence.*;
+
 import lombok.Setter;
 import lombok.Getter;
 import lombok.AllArgsConstructor;
