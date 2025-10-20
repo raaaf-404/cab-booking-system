@@ -2,7 +2,8 @@ package com.cabbooking.security;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import com.cabbooking.repository.BookingRepository;
+import com.cabbooking.repository
+        .BookingRepository;
 import com.cabbooking.repository.CabRepository;
 import com.cabbooking.repository.UserRepository;
 import com.cabbooking.model.User;
