@@ -3,9 +3,10 @@ package com.cabbooking.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -17,22 +18,21 @@ import java.util.Date;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Service // Renamed to Service for better semantic meaning in Spring
+@Service
 public class JwtService {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
-    @Value("${app.jwt.secret}")
-    private String jwtSecretBase64;
+    private final long jwtExpirationMs;
+    private final SecretKey key;
+    private final JwtParser jwtParser;
 
-    @Value("${app.jwt.expiration-ms}")
-    private long jwtExpirationMs;
+    public JwtService(
+            @Value("${app.jwt.secret}") String jwtSecretBase64,
+            @Value("${app.jwt.expiration-ms}") long jwtExpirationMs
+    ) {
+        this.jwtExpirationMs = jwtExpirationMs;
 
-    private SecretKey key;
-    private JwtParser jwtParser;
-
-    @PostConstruct
-    public void init() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecretBase64);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.jwtParser = Jwts.parser().verifyWith(key).build();
