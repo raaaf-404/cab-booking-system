@@ -101,7 +101,7 @@ public class JwtService {
     }
 
     /**
-     * A generic function to extract a specific claim from the token.
+     * A generic function to extract a specific claim from   the token.
      */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         Claims claims = extractAllClaims(token);

@@ -98,7 +98,7 @@ public class BookingServiceImpl implements BookingService {
         bookingSecurityService.validateStatusChange(bookingId, newStatus);
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Bo    oking not found with id: " + bookingId));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
         booking.setStatus(newStatus);
         booking.setUpdatedAt(LocalDateTime.now());
