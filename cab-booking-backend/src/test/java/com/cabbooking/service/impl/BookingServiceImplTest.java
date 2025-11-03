@@ -606,7 +606,7 @@ class BookingServiceImplTest {
         // Verify that because of the exception, the code never tried to find a booking, user, or save.
         verify(bookingRepository, never()).findById(anyLong());
         verify(userRepository, never()).findById(anyLong());
-        verify(bookingRepository, never()).save(any(Booking.class));
+                verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
