@@ -125,7 +125,7 @@ class BookingServiceImplTest {
         bookingRequest = new BookingRegistrationRequest();
         bookingRequest.setPassengerId(passengerUser.getId()); // Correctly set passenger ID
         bookingRequest.setPickupLocation("Point A");
-        bookingRequest.setDropoffLocation("Point B");
+        bookingRequest.setDropoutLocation("Point B");
 
          UserResponse passengerResponse = new UserResponse();
         passengerResponse.setId(passengerUser.getId());

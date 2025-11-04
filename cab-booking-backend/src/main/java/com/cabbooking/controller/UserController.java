@@ -1,6 +1,6 @@
 package com.cabbooking.controller;
 
-import com.cabbooking.dto.request.UserRegistrationRequest;
+import com.cabbooking.dto.request.SignupRequest;
 import com.cabbooking.dto.response.UserResponse;
 import com.cabbooking.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -25,7 +25,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody UserRegistrationRequest registrationRequest) {
+    public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody SignupRequest registrationRequest) {
         UserResponse newUser = userService.registerUser(registrationRequest);
         return new ResponseEntity<>(newUser, HttpStatus.CREATED);
     }

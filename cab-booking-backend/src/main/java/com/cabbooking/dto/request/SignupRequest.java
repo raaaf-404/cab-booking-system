@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.Set;
 
-public class UserRegistrationRequest {
+public class SignupRequest {
     
     @NotBlank(message = "Name is required")
     private String name;

@@ -1,6 +1,6 @@
 package com.cabbooking.service.impl;
 
-import com.cabbooking.dto.request.UserRegistrationRequest;
+import com.cabbooking.dto.request.SignupRequest;
 import com.cabbooking.dto.response.UserResponse;
 import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.exception.UserAlreadyExistsException;
@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse registerUser(UserRegistrationRequest registrationRequest) {
+    public UserResponse registerUser(SignupRequest registrationRequest) {
         if (userRepository.findByEmail(registrationRequest.getEmail()).isPresent()) {
             throw new UserAlreadyExistsException("User with email " + registrationRequest.getEmail() + " already exists.");
         }
