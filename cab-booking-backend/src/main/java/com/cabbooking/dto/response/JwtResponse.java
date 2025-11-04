@@ -1,6 +1,7 @@
 package com.cabbooking.dto.response;
 
 import com.cabbooking.model.User.Role;
+import java.util.List;
 
 /**
  * Data Transfer Object (DTO) for sending a response after successful authentication.
@@ -12,9 +13,16 @@ import com.cabbooking.model.User.Role;
  * @param role     The role of the user (e.g., USER, DRIVER). This is very
  * useful for the frontend to determine what UI to display.
  */
-public record AuthenticationResponse(
-        String jwtToken,
-        Integer userId,
-        Role role
+public record JwtResponse(
+        String accessToken,
+        String refreshToken,
+        Long id,
+        String username,
+        String email,
+        List<String> roles,
+        String tokenType
 ) {
+    public JwtResponse(String accessToken, String refreshToken, Long id, String username, String email, List<String> roles) {
+        this(accessToken, refreshToken, id, username, email, roles, "Bearer");
+    }
 }
