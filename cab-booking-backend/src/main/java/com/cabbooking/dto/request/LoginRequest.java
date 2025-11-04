@@ -13,7 +13,7 @@ import jakarta.validation.constraints.NotBlank;
  * @param email    The user's email address. Must be a valid email format and not blank.
  * @param password The user's password. Must not be blank.
  */
-public record AuthenticationRequest(
+public record LoginRequest(
 
         @NotBlank(message = "Email cannot be blank")
         @Email(message = "Please provide a valid email address")
