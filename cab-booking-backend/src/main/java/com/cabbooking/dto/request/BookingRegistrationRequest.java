@@ -19,16 +19,16 @@ public class BookingRegistrationRequest {
     @NotBlank(message = "Pickup location is required")
     private String pickupLocation;
 
-    @NotBlank(message = "Dropoff location is required")
-    private String dropoffLocation;
+    @NotBlank(message = "Dropout location is required")
+    private String dropoutLocation;
 
     private Double pickupLatitude;
 
     private Double pickupLongitude;
 
-    private Double dropoffLatitude;
+    private Double dropoutLatitude;
 
-    private Double dropoffLongitude;
+    private Double dropoutLongitude;
 
     private LocalDateTime scheduledTime;
 
