@@ -8,6 +8,7 @@ import com.cabbooking.mapper.UserMapper; // Import UserMapper
 import com.cabbooking.model.User;
 import com.cabbooking.repository.UserRepository;
 import com.cabbooking.service.UserService;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,6 +16,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder; // Import PasswordEncoder
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -91,7 +95,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public UserResponse loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
@@ -105,7 +109,6 @@ public class UserServiceImpl implements UserService {
                 user.getEmail(), user.getPassword(), user.getIsActive(), true, true, true, authorities);
     }
 
-
     @Override
     public User findAndValidateDriverById(Long driverId) {
         User driver = userRepository.findById(driverId)
@@ -115,5 +118,13 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
         }
         return driver;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        Page<User> userPage = userRepository.findAll(pageable);
+
+        return userPage.map(userMapper::mapToUserResponse);
     }
 }
