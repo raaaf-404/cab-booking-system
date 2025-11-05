@@ -8,6 +8,7 @@ import com.cabbooking.mapper.UserMapper; // Import UserMapper
 import com.cabbooking.model.User;
 import com.cabbooking.repository.UserRepository;
 import com.cabbooking.service.UserService;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -86,23 +87,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-
-        // Convert your application's roles to Spring Security's GrantedAuthority
-       Set<GrantedAuthority> authorities = user.getRole().stream()
-                // Spring Security expects roles with "ROLE_" prefix
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
-                .collect(Collectors.toSet());
-
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(), user.getPassword(), user.getIsActive(), true, true, true, authorities);
-    }
-
-
-    @Override
     public User findAndValidateDriverById(Long driverId) {
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
@@ -111,5 +95,13 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
         }
         return driver;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        Page<User> userPage = userRepository.findAll(pageable);
+
+        return userPage.map(userMapper::mapToUserResponse);
     }
 }

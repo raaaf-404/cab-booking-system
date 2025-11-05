@@ -2,6 +2,7 @@ package com.cabbooking.controller;
 
 import com.cabbooking.dto.request.SignupRequest;
 import com.cabbooking.dto.response.UserResponse;
+import com.cabbooking.model.User;
 import com.cabbooking.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+import java.util.List;
 
 import jakarta.validation.Valid; // For request body validation
 
@@ -24,12 +28,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody SignupRequest registrationRequest) {
-        UserResponse newUser = userService.registerUser(registrationRequest);
-        return new ResponseEntity<>(newUser, HttpStatus.CREATED);
-    }
-
     @GetMapping("/{userId}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
         return userService.getUserById(userId)
@@ -37,6 +35,11 @@ public class UserController {
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
+    @GetMapping
+    public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
+        Page<UserResponse> userPage = userService.getAllUsers(pageable);
+        return ResponseEntity.ok(userPage);
+    }
     // Future endpoints can be added here:
     // - Update user profile
     // - Get current logged-in user details (once security is implemented)
