@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 
-public interface UserService extends UserDetailsService {
+public interface UserService  {
     UserResponse registerUser(SignupRequest registrationRequest);
     Optional<UserResponse> getUserById(Long userId);
     Optional<User> findByEmail(String email);
