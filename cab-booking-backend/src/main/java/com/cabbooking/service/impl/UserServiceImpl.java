@@ -94,22 +94,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public UserResponse loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-
-        // Convert your application's roles to Spring Security's GrantedAuthority
-       Set<GrantedAuthority> authorities = user.getRole().stream()
-                // Spring Security expects roles with "ROLE_" prefix
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
-                .collect(Collectors.toSet());
-
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(), user.getPassword(), user.getIsActive(), true, true, true, authorities);
-    }
-
-    @Override
     public User findAndValidateDriverById(Long driverId) {
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
