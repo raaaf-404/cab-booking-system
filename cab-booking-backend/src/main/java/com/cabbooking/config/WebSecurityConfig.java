@@ -1,6 +1,6 @@
 package com.cabbooking.config;
 
-import com.cabbooking.security.AuthEntryPointJwt; // <-- ADD THIS IMPORT
+import com.cabbooking.security.AuthEntryPointJwt;
 import com.cabbooking.security.JwtAuthenticationFilter;
 import com.cabbooking.service.impl.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,6 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer; // Keep this
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
