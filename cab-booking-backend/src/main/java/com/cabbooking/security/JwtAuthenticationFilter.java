@@ -77,8 +77,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null, // Credentials are not needed for token-based auth
                         userDetails.getAuthorities()
                 );
+
+
                 // Add more details about the request to the auth token
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
 
                 // This is the magic line that authenticates the user for this request
                 SecurityContextHolder.getContext().setAuthentication(authToken);

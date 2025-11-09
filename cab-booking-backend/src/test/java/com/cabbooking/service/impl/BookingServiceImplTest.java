@@ -187,7 +187,6 @@ class BookingServiceImplTest {
     // We tell the repository to find nothing for the given ID
     given(userRepository.findById(bookingRequest.getPassengerId())).willReturn(Optional.empty());
 
-    // Act & Assert
     // We expect the service to throw a ResourceNotFoundException
     ResourceNotFoundException exception = assertThrows(
             ResourceNotFoundException.class,
@@ -522,7 +521,7 @@ class BookingServiceImplTest {
         given(bookingMapper.toBookingResponse(any(Booking.class))).willReturn(bookingResponse);
 
         // Act
-        BookingResponse updatedBooking = bookingService.assignDriverToBooking(booking.getId(), driverUser.getId());
+         bookingService.assignDriverToBooking(booking.getId(), driverUser.getId());
 
         // Assert
         // 1. Verify the security check was performed

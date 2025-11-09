@@ -2,7 +2,8 @@ package com.cabbooking.config;
 
 import com.cabbooking.security.AuthEntryPointJwt;
 import com.cabbooking.security.JwtAuthenticationFilter;
-import com.cabbooking.service.impl.UserDetailsServiceImpl;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +26,7 @@ import org.springframework.security.web.header.writers.XXssProtectionHeaderWrite
 public class WebSecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final UserDetailsServiceImpl userDetailsService;
+    private final UserDetailsService userDetailsService;
 
     // 1. INJECTED: For handling 401 errors
     private final AuthEntryPointJwt unauthorizedHandler;
@@ -68,7 +69,7 @@ public class WebSecurityConfig {
 
                 // 5. ADDED: Headers required for H2 console to work
                 .headers(headers -> headers
-                        .frameOptions(frameOptions -> frameOptions.sameOrigin()) // Allows H2 console frames
+                        .frameOptions( HeadersConfigurer.FrameOptionsConfig::sameOrigin) // Allows H2 console frames
                         .xssProtection(xss -> xss
                                 .headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
                         )
@@ -77,20 +78,21 @@ public class WebSecurityConfig {
                         )
                 )
 
-                .authenticationProvider(authenticationProvider())
+                .authenticationProvider(authenticationProvider(passwordEncoder(), userDetailsService ))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() {
+    @SuppressWarnings("deprecation")
+    public AuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder, UserDetailsService userDetailsService) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(passwordEncoder);
         return authProvider;
     }
-
+ 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
