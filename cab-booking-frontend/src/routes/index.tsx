@@ -1,16 +1,29 @@
 import { createBrowserRouter } from 'react-router-dom';
 import HomePage from '@/features/booking/routes/HomePage';
 import LoginPage from '@/features/auth/routes/LoginPage';
+import MainLayout from '@/components/layout/MainLayout';
+
+import ProfilePage from '@/features/profile/routes/ProfilePage';
 
 export const router = createBrowserRouter([
-
-    {
-    path: '/',
-    element: <HomePage />,
-    // We'll add a <MainLayout /> component here later
-  },
   {
-    path: '/login',
-    element: <LoginPage />,
+    // This is now your main "layout" route
+    path: '/',
+    element: <MainLayout />, // <-- 2. Set it as the element
+    children: [
+      // 3. These routes will render *inside* MainLayout's <Outlet>
+      {
+        index: true, // This means it's the default child route
+        element: <HomePage />,
+      },
+      {
+        path: '/login',
+        element: <LoginPage />,
+      },
+      {
+        path: '/profile',
+        element: <ProfilePage />, // We'll add this page next
+      },
+    ],
   },
 ]);
