@@ -36,9 +36,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            @NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
+            @NonNull
+            HttpServletRequest request,
+            @NonNull
+            HttpServletResponse response,
+            @NonNull
+            FilterChain filterChain
     ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
@@ -49,14 +52,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        final String jwt = authHeader.substring(7); // "Bearer ".length() is 7
+        final String BEARER_PREFIX = "Bearer ";
+
+        final String jwt = authHeader.substring(BEARER_PREFIX.length());
         final String username;
 
         try {
             // 2. Extract the username from the token
             username = jwtService.extractUsername(jwt);
         } catch (JwtException e) {
-            // If the token is invalid (expired, malformed, etc.), just let the request
+            // If the token is invalid (expired, malformed, etc.), let the request
             // continue without an authenticated user. Spring will deny access later.
             // A more advanced setup would use an AuthenticationEntryPoint to return a 401.
             logger.warn("JWT processing error: {}", e.getMessage());
