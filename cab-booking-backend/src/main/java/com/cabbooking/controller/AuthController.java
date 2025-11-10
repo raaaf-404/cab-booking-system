@@ -4,18 +4,28 @@ import com.cabbooking.dto.request.LoginRequest;
 import com.cabbooking.dto.request.LogoutRequest;
 import com.cabbooking.dto.request.SignupRequest;
 import com.cabbooking.dto.request.TokenRefreshRequest;
+
 import com.cabbooking.dto.response.JwtResponse;
 import com.cabbooking.dto.response.MessageResponse;
 import com.cabbooking.dto.response.TokenRefreshResponse;
-import com.cabbooking.dto.response.UserResponse; // Keep this import
-import com.cabbooking.security.JwtService; // Your existing JWT service
-import com.cabbooking.service.RefreshTokenService; // You will need to create this service
-import com.cabbooking.service.UserService; // Your existing UserService
-import com.cabbooking.service.impl.UserDetailsServiceImpl; // Your existing service
-import org.springframework.security.core.userdetails.UserDetails; // Correct import
+import com.cabbooking.dto.response.UserResponse;
+
+import com.cabbooking.security.JwtService; 
+
+import com.cabbooking.service.RefreshTokenService;
+import com.cabbooking.service.UserService;
+import com.cabbooking.service.impl.UserDetailsServiceImpl;
+import com.cabbooking.service.RefreshTokenService;
+
+import com.cabbooking.exception.TokenRefreshException;
+
+import org.springframework.security.core.userdetails.UserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+
+import com.cabbooking.model.User;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -36,89 +46,99 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
-    private final JwtService jwtService; // Your existing JwtService
-    private final UserDetailsServiceImpl userDetailsService; // Your UserDetailsService
-
-    // You will need to create this service to manage refresh tokens in your DB
-    // private final RefreshTokenService refreshTokenService;
+    private final JwtService jwtService;
+    private final UserDetailsServiceImpl userDetailsService;
+    private final RefreshTokenService refreshTokenService; // Uncomment when active
 
     /**
      * POST /api/v1/auth/register
-     * This logic is MOVED from UserController.
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-        // We use your existing UserService, which already handles password encoding
-        // and UserAlreadyExistsException.
-        UserResponse userResponse = userService.registerUser(signUpRequest);
-
-        // Per best practices, we return a simple success message.
-        // The client should then be directed to the login page.
+        userService.registerUser(signUpRequest); 
         return ResponseEntity.ok(new MessageResponse("User registered successfully! Please log in."));
     }
-
+    
     /**
      * POST /api/v1/auth/login
-     * This is the NEW login endpoint.
      */
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
 
+        // 1. Authenticate the user, which returns the fully authenticated object
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password()));
+                new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password()));
 
+        // 2. Set the context (essential for Spring Security)
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        
+        // 3. Generate token using the Authentication object
+        String accessToken = jwtService.generateToken(authentication);
+        
+        // 4. Get UserDetails and User Entity to get the ID for the refresh token
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-        // We use your existing UserDetailsServiceImpl to get UserDetails
-        UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.username());
+        User user = userService.findByEmail(userDetails.getUsername()).orElseThrow(
+            () -> new RuntimeException("Error not found after successful authentication")
+            );
 
-        String accessToken = jwtService.generateToken(userDetails);
+        // 5. USE REFRESH TOKEN SERVICE: Create and persist the long-lived token
+        String refreshToken = refreshTokenService.createRefreshToken(user.getId()).getToken();
 
-        // --- This is the new part ---
-        // You need to implement RefreshTokenService to create and store this.
-        // String refreshToken = refreshTokenService.createRefreshToken(userDetails.getUsername());
-        // For now, let's just use the access token as a placeholder until you build RefreshTokenService
-        String refreshToken = accessToken; // <-- TODO: Replace with real RefreshTokenService logic
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
-
-        // We return our new JwtResponse DTO
-        // You'll need to fetch the ID and email, perhaps from your User object
+                
+        // 6. Populate JwtResponse with full user data
         return ResponseEntity.ok(new JwtResponse(
                 accessToken,
                 refreshToken,
-                null, // TODO: Get User ID
-                userDetails.getUsername(),
-                null, // TODO: Get User Email
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
                 roles
         ));
     }
 
-    /**
-     * POST /api/v1/auth/refresh
-     * This is the NEW refresh endpoint. (Requires RefreshTokenService)
-     */
-    // @PostMapping("/refresh")
-    // public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
-    //     return refreshTokenService.findByToken(request.refreshToken())
-    //             .map(refreshTokenService::verifyExpiration)
-    //             .map(refreshToken -> {
-    //                 UserDetails userDetails = userDetailsService.loadUserByUsername(refreshToken.getUser().getUsername());
-    //                 String newAccessToken = jwtService.generateToken(userDetails);
-    //                 return ResponseEntity.ok(new TokenRefreshResponse(newAccessToken, request.refreshToken()));
-    //             })
-    //             .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
-    // }
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
+        String requestRefreshToken = request.refreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                // 1. Find the token in the database
+                .map(refreshTokenService::verifyExpiration) // 2. Verify it has not expired
+                .map(refreshToken -> {
+                    // 3. If valid, get the user and generate a new access token
+                    User user = refreshToken.getUser();
+                    
+                    // Note: We use the existing Authentication object structure for generation.
+                    // This is slightly complex because JwtService only accepts Authentication, 
+                    // so we need to fetch UserDetails to manually create an Authentication object 
+                    // or, better yet, just update JwtService to accept UserDetails too. 
+                    // For now, let's use the efficient approach of fetching UserDetails
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+                    
+                    // Create a temporary Authentication object just for the JwtService
+                    Authentication authForToken = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                        
+                    String newAccessToken = jwtService.generateToken(authForToken);
+                    
+                    return ResponseEntity.ok(new TokenRefreshResponse(newAccessToken, requestRefreshToken));
+                })
+                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token is not in database!"));
+    }
+
 
     /**
      * POST /api/v1/auth/logout
      * This is the NEW secure logout endpoint. (Requires RefreshTokenService)
      */
-    // @PostMapping("/logout")
-    // public ResponseEntity<?> logoutUser(@Valid @RequestBody LogoutRequest logoutRequest) {
-    //     refreshTokenService.deleteByToken(logoutRequest.refreshToken());
-    //     return ResponseEntity.ok(new MessageResponse("Logout successful."));
-    // }
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(@Valid @RequestBody LogoutRequest logoutRequest) {
+        // This is the secure server-side invalidation.
+        refreshTokenService.deleteByToken(logoutRequest.refreshToken());
+        return ResponseEntity.ok(new MessageResponse("Logout successful."));
+    }
+    
 }
