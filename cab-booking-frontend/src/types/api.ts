@@ -32,3 +32,13 @@ export type AuthResponse = {
 export type MessageResponse = {
   message: string;
 };
+
+export type TokenRefreshRequest = {
+    refreshToken: string;
+}
+
+export type TokenRefreshResponse = {
+    accessToken: string;
+    refreshToken: string;
+    tokenType: string;  // e.g., "Bearer"
+}
