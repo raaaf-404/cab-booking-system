@@ -5,6 +5,8 @@ import MainLayout from '@/components/layout/MainLayout';
 
 import ProfilePage from '@/features/profile/routes/ProfilePage';
 
+import ProtectedRoute from './ProtectedRoute';
+
 export const router = createBrowserRouter([
   {
     // This is now your main "layout" route
@@ -20,9 +22,17 @@ export const router = createBrowserRouter([
         path: '/login',
         element: <LoginPage />,
       },
+      // {
+      //   path: '/signup',
+      //   element: <SignupPage />,
+      // },
       {
         path: '/profile',
-        element: <ProfilePage />, // We'll add this page next
+        element: (
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        ),
       },
     ],
   },
