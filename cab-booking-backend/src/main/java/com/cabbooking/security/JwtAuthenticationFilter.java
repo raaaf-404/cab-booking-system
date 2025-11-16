@@ -72,7 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 3. If we have a username but the user is not yet authenticated
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             // Load user details from the database (or cache)
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
             // 4. Validate the token against the user details
             if (jwtService.isTokenValid(jwt, userDetails)) {
@@ -86,7 +86,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // Add more details about the request to the auth token
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
 
                 // This is the magic line that authenticates the user for this request
                 SecurityContextHolder.getContext().setAuthentication(authToken);
