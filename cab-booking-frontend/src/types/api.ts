@@ -35,10 +35,34 @@ export type MessageResponse = {
 
 export type TokenRefreshRequest = {
     refreshToken: string;
-}
+};
 
 export type TokenRefreshResponse = {
     accessToken: string;
     refreshToken: string;
     tokenType: string;  // e.g., "Bearer"
-}
+};
+
+// Corresponds to CabResponse.java
+export type Cab = {
+  cabId: number;
+  cabType: string;
+  licensePlate: string;
+  driver: User; //User type is from UserResponse
+  available: boolean;
+  currenLocation: string;
+};
+
+export type Booking = {
+  bookingId: number;
+  user: User;
+  cab: Cab;
+  pickupLocation: string;
+  dropoffLocation: string;
+  pickupTime: string;
+  dropOffTime: string;
+  bookingStatus: string;
+  fare: number;
+};
+
+
