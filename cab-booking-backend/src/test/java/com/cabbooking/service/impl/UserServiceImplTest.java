@@ -1,6 +1,6 @@
 package com.cabbooking.service.impl;
 
-import com.cabbooking.dto.request.UserRegistrationRequest;
+import com.cabbooking.dto.request.SignupRequest;
 import com.cabbooking.dto.response.UserResponse;
 import com.cabbooking.exception.UserAlreadyExistsException;
 import com.cabbooking.mapper.UserMapper;
@@ -42,13 +42,13 @@ class UserServiceImplTest {
     @InjectMocks
     private UserServiceImpl userService;
 
-    private UserRegistrationRequest registrationRequest;
+    private SignupRequest registrationRequest;
     private User savedUser;
     private UserResponse userResponse;
 
     @BeforeEach
     void setUp() {
-        registrationRequest = new UserRegistrationRequest();
+        registrationRequest = new SignupRequest();
         registrationRequest.setName("Test User");
         registrationRequest.setEmail("test@example.com");
         registrationRequest.setPassword("password");
