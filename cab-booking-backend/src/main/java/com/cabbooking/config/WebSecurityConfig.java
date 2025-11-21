@@ -20,6 +20,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 
+import org.springframework.security.config.Customizer;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -39,6 +41,8 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+
+                .cors(Customizer.withDefaults())
                 // 2. EDITED: Disable CSRF for stateless API, but configure for H2
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers("/api/**") // Ignore for your stateless API
