@@ -91,8 +91,8 @@ public class CabController {
     CabResponse updatedCabLocation = cabService.updateCabLocation(cabId, request);
     return ResponseEntity.ok(ApiResponse.success(updatedCabLocation));
     }
-    
-    @PatchMapping("{cabId}/cab-availability-status")
+
+    @PatchMapping("/{cabId}/cab-availability-status")
     public ResponseEntity<ApiResponse<CabResponse>> updateCabAvailabilityStatus(
            @PathVariable Long cabId,
            @Valid @RequestBody CabUpdateAvailabilityStatusRequest request) {
@@ -100,7 +100,7 @@ public class CabController {
     return ResponseEntity.ok(ApiResponse.success(updatedCabStatus));
     }
 
-    @PatchMapping("/{cabId}/assign-driver}")
+    @PatchMapping("/{cabId}/assign-driver")
     public ResponseEntity<ApiResponse<CabResponse>> assignDriverToCab(
            @PathVariable Long cabId,
            @Valid @RequestBody DriverAssignmentRequest request) {
@@ -108,7 +108,7 @@ public class CabController {
     return ResponseEntity.ok(ApiResponse.success(assignedCab));
     }
 
-    @PatchMapping("{cabId}/remove-driver")
+    @PatchMapping("/{cabId}/remove-driver")
     public ResponseEntity<ApiResponse<CabResponse>> removeDriverFromCab(@PathVariable Long cabId) {
         CabResponse removedCabDriver = cabService.removeDriverFromCab(cabId);
         return ResponseEntity.ok(ApiResponse.success(removedCabDriver));
@@ -127,7 +127,7 @@ public class CabController {
         return ResponseEntity.ok(ApiResponse.success(allCabsPage));
     }
 
-    @DeleteMapping("/{cabid}")
+    @DeleteMapping("/{cabId}")
     public ResponseEntity<ApiResponse<Void>> deleteCab(@PathVariable Long cabId) {
         cabService.deleteCab(cabId);
         return ResponseEntity.noContent().build();
