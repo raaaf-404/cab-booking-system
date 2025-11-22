@@ -1,5 +1,7 @@
 package com.cabbooking.dto.request;
 
+import com.cabbooking.model.Cab;
+import com.cabbooking.model.Cab.VehicleType;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -19,7 +21,7 @@ public class CabRegistrationRequest {
     private Long driverId;
 
     @NotBlank(message = "Vehicle type is required")
-    private String vehicleType;
+    private VehicleType vehicleType;
 
     private String model;
 

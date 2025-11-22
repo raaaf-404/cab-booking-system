@@ -45,7 +45,7 @@ public class CabServiceImpl implements CabService {
         Cab cab = new Cab();
         cab.setDriver(driver);
         cab.setLicensePlateNumber(request.getLicensePlateNumber());
-        cab.setVehicleType(Cab.VehicleType.valueOf(request.getVehicleType()));
+        cab.setVehicleType(request.getVehicleType());
         cab.setIsMeterFare(request.getIsMeterFare());
         cab.setBaseFare(request.getBaseFare());
         cab.setRatePerKm(request.getRatePerKm());

@@ -120,7 +120,7 @@ private CabRegistrationRequest cabRequest;
         cabResponse.setLatitude(cab.getLatitude());
         cabResponse.setLongitude(cab.getLongitude());
         cabResponse.setStatus(cab.getStatus());
-        cabResponse.setVehicleType(cab.getVehicleType().name()); // Convert Enum to String
+        cabResponse.setVehicleType(cab.getVehicleType());
         cabResponse.setModel(cab.getModel());
         cabResponse.setColor(cab.getColor());
         cabResponse.setManufacturingYear(cab.getManufacturingYear());
@@ -133,7 +133,7 @@ private CabRegistrationRequest cabRequest;
         cabRequest = CabRegistrationRequest.builder()
                 .driverId(driver.getId())
                 .licensePlateNumber("NCR-1234")
-                .vehicleType(Cab.VehicleType.SEDAN.name())
+                .vehicleType(Cab.VehicleType.SEDAN)
                 .model("Toyota Vios")
                 .color("Silver")
                 .manufacturingYear(2023)
@@ -198,23 +198,6 @@ private CabRegistrationRequest cabRequest;
     }
 
     @Test
-    @DisplayName("Test Register Cab with invalid vehicle type should throw IllegalArgumentException")
-    void whenRegisterCab_withInvalidVehicleType_thenThrowIllegalArgumentException() {
-        // Arrange
-        cabRequest.setVehicleType("MOTORCYCLE"); // Invalid vehicle type
-        given(userService.findAndValidateDriverById(cabRequest.getDriverId())).willReturn(driver);
-        given(cabRepository.findByLicensePlateNumber(cabRequest.getLicensePlateNumber())).willReturn(Optional.empty());
-
-        // Act & Assert
-        assertThatThrownBy(() -> cabService.registerCab(cabRequest))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("No enum constant");
-
-        // Verify that save was never called
-        verify(cabRepository, never()).save(any(Cab.class));
-    }
-
-    @Test
     @DisplayName("Test Get Cab by Id with valid ID should return a cab")
     void whenGetCabById_withValidId_thenReturnCabResponse() {
         // Arrange
@@ -229,7 +212,7 @@ private CabRegistrationRequest cabRequest;
         assertThat(foundCab).isNotNull();
         assertThat(foundCab.getId()).isEqualTo(cab.getId());
         assertThat(foundCab.getLicensePlateNumber()).isEqualTo(cab.getLicensePlateNumber());
-        assertThat(foundCab.getVehicleType()).isEqualTo(cab.getVehicleType().name());
+        assertThat(foundCab.getVehicleType()).isEqualTo(cab.getVehicleType());
 
         // 2. Verify that the repository and mapper were called correctly.
         verify(cabRepository).findById(cab.getId());

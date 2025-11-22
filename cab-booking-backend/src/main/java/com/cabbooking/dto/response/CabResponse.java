@@ -1,5 +1,6 @@
 package com.cabbooking.dto.response;
 
+import com.cabbooking.model.Cab;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
 import com.cabbooking.dto.response.UserResponse;
+import com.cabbooking.model.Cab.VehicleType;
 import com.cabbooking.model.Cab.AvailabilityStatus;
 
 @Data
@@ -23,7 +25,7 @@ public class CabResponse {
     private Double longitude; 
     private LocalDateTime lastLocationUpdate;
     private AvailabilityStatus status;
-    private String vehicleType;
+    private VehicleType vehicleType;
     private Boolean isMeterFare;
     private BigDecimal baseFare;
     private BigDecimal ratePerKm;

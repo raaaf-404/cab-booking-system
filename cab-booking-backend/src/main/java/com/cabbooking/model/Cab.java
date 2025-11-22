@@ -70,10 +70,10 @@ private User driver;
 
 
 //Location
-@Column(precision = 9, scale = 6)
+@Column(name = "latitude")
 private Double latitude;
 
-@Column(precision = 9, scale = 6)
+@Column(name = "longitude")
 private Double longitude;
 
 @Column(name = "last_location_update")
@@ -108,7 +108,7 @@ private String model;
 @Column(name = "color")
 private String color;
 
-@Column(name = "year")
+@Column(name = "manufacturing_year")
 private Integer manufacturingYear;
 
 @Min(value = 1, message = "Seating capacity must be at least 1")
