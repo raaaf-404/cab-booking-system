@@ -51,9 +51,9 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService; // Uncomment when active
 
     /**
-     * POST /api/v1/auth/register
+     * POST /api/v1/auth/signup
      */
-    @PostMapping("/register")
+    @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         userService.registerUser(signUpRequest); 
         return ResponseEntity.ok(new MessageResponse("User registered successfully! Please log in."));
