@@ -14,7 +14,7 @@ import type {
  */
 export const login = async (data: LoginRequest): Promise<AuthResponse> => {
   // We use .data because axios wraps the response
-  const { data: response } = await axiosClient.post('/auth/signin', data);
+  const { data: response } = await axiosClient.post('v1/auth/signin', data);
   return response;
 };
 
@@ -23,7 +23,7 @@ export const login = async (data: LoginRequest): Promise<AuthResponse> => {
  * Corresponds to: POST /api/auth/signup
  */
 export const signup = async (data: SignupRequest): Promise<MessageResponse> => {
-  const { data: response } = await axiosClient.post('/auth/signup', data);
+  const { data: response } = await axiosClient.post('v1/auth/signup', data);
   return response;
 };
 
