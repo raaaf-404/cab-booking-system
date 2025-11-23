@@ -14,7 +14,7 @@ import type {
  */
 export const login = async (data: LoginRequest): Promise<AuthResponse> => {
   // We use .data because axios wraps the response
-  const { data: response } = await axiosClient.post('v1/auth/signin', data);
+  const { data: response } = await axiosClient.post('v1/auth/login', data);
   return response;
 };
 
