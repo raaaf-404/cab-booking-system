@@ -16,13 +16,16 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: '',
+      email : '',
       password: '',
     },
   });
 
   const handleFormSubmit = (data: LoginFormInputs) => {
-    onSubmit(data);
+    onSubmit({
+        email: data.email,
+        password: data.password,
+    });
   };
 
   return (
@@ -33,22 +36,22 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
       {/* Username Field */}
       <div>
         <label
-          htmlFor="username"
+          htmlFor="email"
           className="block text-sm font-medium text-gray-700"
         >
-          Username
+          Email Address
         </label>
         <input
-          id="username"
-          type="text"
-          {...register('username')}
+          id="email"
+          type="email"
+          {...register('email')}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           disabled={isLoading}
         />
         {/* Display validation error */}
-        {errors.username && (
+        {errors.email && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.username.message}
+            {errors.email.message}
           </p>
         )}
       </div>

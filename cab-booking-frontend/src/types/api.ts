@@ -8,15 +8,16 @@ export type User = {
 
 // Corresponds to LoginRequest.java
 export type LoginRequest = {
-  username: string;
+  email: string;
   password: string;
 };
 
 // Corresponds to SignupRequest.java
 export type SignupRequest = {
-  username: string;
+  name: string;
   email: string;
   password: string;
+  phone: string;
   roles?: string[]; // We make this optional on the frontend
 };
 

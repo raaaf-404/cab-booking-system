@@ -18,9 +18,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     // Delete a token by its unique string (for logout)
     // We use @Modifying because this is a DML operation
     @Modifying
-    int deleteByToken(String token);
+    Integer deleteByToken(String token);
 
     //Delete all tokens for a user
     @Modifying
-    int deleteByUser(User user);
+    Integer deleteByUser(User user);
 }

@@ -18,8 +18,9 @@ const SignupForm = ({ onSubmit, isLoading }: SignupFormProps) => {
     // 2. Connect our *new* signupSchema
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      username: '',
+      name: '',
       email: '',
+      phone: '',
       password: '',
       confirmPassword: '',
     },
@@ -31,9 +32,11 @@ const SignupForm = ({ onSubmit, isLoading }: SignupFormProps) => {
     // We pass the data up to the parent component.
     // Note: We don't send `confirmPassword` to the API.
     onSubmit({
-      username: data.username,
+      name: data.name,
       email: data.email,
+      phone: data.phone,
       password: data.password,
+      //roles are handled default logic if undefined
     });
   };
 
@@ -42,24 +45,24 @@ const SignupForm = ({ onSubmit, isLoading }: SignupFormProps) => {
       onSubmit={handleSubmit(handleFormSubmit)}
       className="flex flex-col gap-4"
     >
-      {/* Username Field */}
+      {/* Name Field */}
       <div>
         <label
-          htmlFor="username"
+          htmlFor="name"
           className="block text-sm font-medium text-gray-700"
         >
-          Username
+          Full Name
         </label>
         <input
-          id="username"
+          id="name"
           type="text"
-          {...register('username')}
+          {...register('name')}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           disabled={isLoading}
         />
-        {errors.username && (
+        {errors.name && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.username.message}
+            {errors.name.message}
           </p>
         )}
       </div>
@@ -85,6 +88,29 @@ const SignupForm = ({ onSubmit, isLoading }: SignupFormProps) => {
           </p>
         )}
       </div>
+
+        {/* Phone Field (NEW) */}
+        <div>
+            <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700"
+            >
+                Phone Number
+            </label>
+            <input
+                id="phone"
+                type="tel"
+                {...register('phone')}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="e.g. 1234567890"
+                disabled={isLoading}
+            />
+            {errors.phone && (
+                <p className="mt-1 text-sm text-red-600">
+                    {errors.phone.message}
+                </p>
+            )}
+        </div>
 
       {/* Password Field */}
       <div>
