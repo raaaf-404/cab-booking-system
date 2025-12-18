@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.math.BigDecimal;
 
 import com.cabbooking.dto.response.UserResponse;
@@ -23,7 +23,7 @@ public class CabResponse {
     private UserResponse driver;
     private Double latitude;
     private Double longitude; 
-    private LocalDateTime lastLocationUpdate;
+    private Instant lastLocationUpdate;
     private AvailabilityStatus status;
     private VehicleType vehicleType;
     private Boolean isMeterFare;
