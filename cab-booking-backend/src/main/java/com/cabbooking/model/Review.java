@@ -8,9 +8,15 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Entity
-@Table(name = "reviews", uniqueConstraints = {
-        @UniqueConstraint(name = "unique_trip_reviewer_type", columnNames = {"trip_id", "reviewer_type"})
-})
+@Table(name = "reviews",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "unique_trip_reviewer_type", columnNames = {"trip_id", "reviewer_type"})
+        },
+        indexes = {
+                @Index(name = "idx_review_reviewee", columnList = "reviewee_id"),
+                @Index(name = "idx_review_reviewer", columnList = "reviewer_id")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,6 +36,16 @@ public class Review extends BaseEntity {
     @JoinColumn(name = "trip_id", nullable = false)
     @NotNull(message = "Review must be linked to a specific trip")
     private Trip trip;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewer_id", nullable = false)
+    @NotNull
+    private User reviewer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewee_id", nullable = false)
+    @NotNull
+    private User reviewee;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "reviewer_type", nullable = false)
