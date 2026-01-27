@@ -68,13 +68,12 @@ public class AuthController {
         // 1. Authenticate the user, which returns the fully authenticated object
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password()));
-
         // 2. Set the context (essential for Spring Security)
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        
+
         // 3. Generate token using the Authentication object
         String accessToken = jwtService.generateToken(authentication);
-        
+
         // 4. Get UserDetails and User Entity to get the ID for the refresh token
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
@@ -83,8 +82,7 @@ public class AuthController {
             );
 
         // 5. USE REFRESH TOKEN SERVICE: Create and persist the long-lived token
-        String refreshToken = refreshTokenService.createRefreshToken(user.getId()).getToken();
-
+        String refreshToken = refreshTokenService.createRefreshToken(user.getId()).getToken(
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -99,6 +97,17 @@ public class AuthController {
                 user.getEmail(),
                 roles
         ));
+    }
+
+    /**
+     * POST /api/v1/auth/logout
+     * This is the NEW secure logout endpoint. (Requires RefreshTokenService)
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(@Valid @RequestBody LogoutRequest logoutRequest) {
+        // This is the secure server-side invalidation.
+        refreshTokenService.deleteByToken(logoutRequest.refreshToken());
+        return ResponseEntity.ok(new MessageResponse("Logout successful."));
     }
 
     public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
@@ -127,18 +136,6 @@ public class AuthController {
                     return ResponseEntity.ok(new TokenRefreshResponse(newAccessToken, requestRefreshToken));
                 })
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token is not in database!"));
-    }
-
-
-    /**
-     * POST /api/v1/auth/logout
-     * This is the NEW secure logout endpoint. (Requires RefreshTokenService)
-     */
-    @PostMapping("/logout")
-    public ResponseEntity<?> logoutUser(@Valid @RequestBody LogoutRequest logoutRequest) {
-        // This is the secure server-side invalidation.
-        refreshTokenService.deleteByToken(logoutRequest.refreshToken());
-        return ResponseEntity.ok(new MessageResponse("Logout successful."));
     }
     
 }
