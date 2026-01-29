@@ -14,6 +14,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import com.cabbooking.model.enums.UserRole;
 
 @Entity
 @Table(name = "users", indexes = {
@@ -28,11 +29,6 @@ import java.util.Set;
 @EntityListeners(AuditingEntityListener.class)
 public class User extends  BaseEntity {
 
-    public enum UserRole {
-        ROLE_PASSENGER,
-        ROLE_DRIVER,
-        ROLE_ADMIN
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
