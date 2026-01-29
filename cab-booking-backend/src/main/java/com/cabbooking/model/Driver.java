@@ -7,6 +7,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.cabbooking.model.enums.DriverStatus;
+
 @Entity
 @Table(name = "drivers", indexes = {
         @Index(name = "idx_driver_status", columnList = "status"),
@@ -18,10 +20,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Driver extends BaseEntity {
-
-    public enum DriverStatus {
-        OFFLINE, ONLINE, ON_TRIP
-    }
 
     @Id
     private Long id;
