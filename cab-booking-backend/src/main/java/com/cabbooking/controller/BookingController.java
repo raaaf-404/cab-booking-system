@@ -48,7 +48,7 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success(booking));
     }
 
-       /**
+     /**
      * Endpoint to retrieve all bookings associated with a specific passenger ID.
      *
      * @param passengerId The ID of the passenger.
