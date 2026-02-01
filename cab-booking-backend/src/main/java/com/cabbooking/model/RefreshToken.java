@@ -2,9 +2,7 @@ package com.cabbooking.model;
 
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -12,7 +10,9 @@ import java.time.Instant;
 @Table(name = "refresh_token")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -28,9 +28,4 @@ public class RefreshToken {
     @Column(nullable = false)
     private Instant expiryDate;
 
-    public RefreshToken(User user, String token, Instant expiryDate) {
-        this.user = user;
-        this.token = token;
-        this.expiryDate = expiryDate;
-    }
 }
