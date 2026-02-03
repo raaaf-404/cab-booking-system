@@ -8,6 +8,9 @@ import com.cabbooking.dto.request.DriverSignupRequest;
 import com.cabbooking.model.User;
 import com.cabbooking.model.Passenger;
 import com.cabbooking.model.Driver;
+import com.cabbooking.model.RefreshToken;
+
+import com.cabbooking.security.UserPrincipal;
 
 import com.cabbooking.repository.DriverRepository;
 import com.cabbooking.repository.UserRepository;
@@ -18,8 +21,12 @@ import com.cabbooking.model.enums.DriverStatus;
 
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.cabbooking.service.AuthService;
+import com.cabbooking.service.RefreshTokenService;
+
+import org.springframework.security.core.userdetails.UserDetails;
 import com.cabbooking.exception.DuplicateResourceException;
-import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,42 +39,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j // For logging
-public class AuthService {
+public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final DriverRepository driverRepository;
     private final PassengerRepository passengerRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
     private final AuthenticationManager authenticationManager;
 
-    /**
-     * Handles new user registration.
-     */
-//    @Transactional
-//    public AuthResponse register(PassengerSignupRequest request) {
-//        log.info("Attempting to register user: {}", request.email());
-//
-//        if (userRepository.existsByEmail(request.email())) {
-//            throw new DuplicateResourceException("Email already exists");
-//        }
-//
-//        if (userRepository.existsByPhoneNumber(request.phoneNumber())) {
-//            throw new DuplicateResourceException("Phone number already in use");
-//        }
-//
-//        User user = User.builder()
-//                .email(request.email())
-//                .password(passwordEncoder.encode(request.password()))
-//                .role(request.role())
-//                .build();
-//
-//        userRepository.save(user);
-//
-//        String jwtToken = jwtService.generateToken(user);
-//        return new AuthResponse(jwtToken, user.getEmail(), user.getRole().name());
-//    }
-
+    @Override
     @Transactional
     public AuthResponse registerPassenger(PassengerSignupRequest request) {
 
@@ -90,6 +72,7 @@ public class AuthService {
         return generateAuthResponse(user);
     }
 
+    @Override
     @Transactional
     public AuthResponse registerDriver(DriverSignupRequest request) {
 
@@ -118,6 +101,28 @@ public class AuthService {
         return generateAuthResponse(user);
     }
 
+    /**
+     * Authenticates existing users and returns a JWT.
+     */
+    @Override
+    public AuthResponse login(LoginRequest request) {
+
+        // 1. Authenticate returns a fully populated Authentication object
+        var authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.email(),
+                        request.password()
+                )
+        );
+
+        // 2. Extract the principal (which is your UserPrincipal)
+        // and then get the domain User from it
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        User user = principal.getUser();
+
+        return generateAuthResponse(user);
+    }
+
     private User createUserAccount(String email, String password, String phoneNumber, UserRole role) {
 
         if (userRepository.existsByEmail(email))
@@ -137,47 +142,30 @@ public class AuthService {
     }
 
     /**
-     * Helper method to wrap a User entity into an AuthResponse with a fresh JWT.
+     * Generates a fully populated AuthResponse with Access AND Refresh tokens.
      */
     private AuthResponse generateAuthResponse(User user) {
         log.debug("Generating auth response for user: {}", user.getEmail());
 
-        // Generate the JWT token using our security service
-        String jwtToken = jwtService.generateToken(user);
+        UserDetails principal = new UserPrincipal(user);
+        String jwtToken = jwtService.generateToken(principal);
 
-        // Map the Set<UserRole> to Set<String>
+        // 2. GENERATE REFRESH TOKEN HERE
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+
         Set<String> roleNames = user.getRoles().stream()
                 .map(Enum::name)
                 .collect(Collectors.toSet());
 
-        // Defensive check: If no roles exist, provide a default
         if (roleNames.isEmpty()) {
             roleNames.add(UserRole.ROLE_PASSENGER.name());
         }
 
         return AuthResponse.builder()
                 .token(jwtToken)
+                .refreshToken(refreshToken.getToken())
                 .email(user.getEmail())
                 .roles(roleNames)
                 .build();
-    }
-
-    /**
-     * Authenticates existing users and returns a JWT.
-     */
-    public AuthResponse login(LoginRequest request) {
-        // This line triggers the actual authentication process in Spring Security
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.email(),
-                        request.password()
-                )
-        );
-
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        String jwtToken = jwtService.generateToken(user);
-        return new AuthResponse(jwtToken, user.getEmail(), user.getRole().name());
     }
 }
