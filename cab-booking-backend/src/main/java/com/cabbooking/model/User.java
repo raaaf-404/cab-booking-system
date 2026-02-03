@@ -5,17 +5,13 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
-import com.cabbooking.model.enums.UserRole;
+import java.util.Collections;
 
+import com.cabbooking.model.enums.UserRole;
 @Entity
 @Table(name = "users", indexes = {
         @Index(name = "idx_user_email", columnList = "email"),
@@ -62,7 +58,7 @@ public class User extends  BaseEntity {
     // --- Helper Methods ---
 
     /**
-     * Use this for business logic to check if user has access.
+     * Use this for business logic to check if a user has access.
      */
     public boolean hasRole(UserRole role) {
         return roles != null && roles.contains(role);
