@@ -1,6 +1,8 @@
 package com.cabbooking.service.impl;
 
 import com.cabbooking.exception.TokenRefreshException;
+import com.cabbooking.exception.ResourceNotFoundException;
+
 import com.cabbooking.model.RefreshToken;
 import com.cabbooking.model.User;
 
@@ -8,6 +10,7 @@ import com.cabbooking.service.RefreshTokenService;
 
 import com.cabbooking.repository.RefreshTokenRepository;
 import com.cabbooking.repository.UserRepository;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +22,11 @@ import java.util.Optional;
 import java.time.Instant;
 import java.util.UUID;
 
+
+/**
+ * Implementation of RefreshTokenService handling the lifecycle of long-lived tokens.
+ * Provides security by invalidating old sessions and verifying token expiration.
+ */
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenServiceImpl implements RefreshTokenService {
@@ -34,34 +42,36 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         return refreshTokenRepository.findByToken(token);
     }
 
+    /**
+     * Creates a new refresh token for a user identified by email.
+     * Implementation follows a "Single Session" policy by clearing old tokens.
+     */
     @Override
     @Transactional
-    public RefreshToken createRefreshToken(Long userId) {
+    public RefreshToken createRefreshToken(String email) {
+        // 1. Fetch user by email to align with our Security Principal logic
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new RuntimeException("User not found with id: " + userId));
-
-        // Invalidate all old refresh tokens for this user,
-        // This means a user can only be logged in on one device at a time.
-        // If you want a multi-device login, comment on this line.
+        // 2. Security Policy: Invalidate old tokens (Single active session per user)
         refreshTokenRepository.deleteByUser(user);
 
-        // Create the new token
-        String token = UUID.randomUUID().toString();
-        Instant expiryDate = Instant.now().plusMillis(refreshTokenDurationMs);
+        // 3. Construct the new token
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(UUID.randomUUID().toString())
+                .expiryDate(Instant.now().plusMillis(refreshTokenDurationMs))
+                .build();
 
-        RefreshToken refreshToken = new RefreshToken(user, token, expiryDate);
-        RefreshToken saveRefreshToken = refreshTokenRepository.save(refreshToken);
-        return saveRefreshToken;
+        return refreshTokenRepository.save(refreshToken);
     }
 
     @Override
     public RefreshToken verifyExpiration(RefreshToken token) {
-        if(token.getExpiryDate().compareTo(Instant.now()) < 0) {
+
+        if (token.getExpiryDate().isBefore(Instant.now())) {
             refreshTokenRepository.delete(token);
-            throw new TokenRefreshException(
-                    token.getToken(),
-                    "Refresh token was expired. Please make a new signin request.");
+            throw new TokenRefreshException(token.getToken(), "Refresh token expired. Please sign in again.");
         }
         return token;
     }

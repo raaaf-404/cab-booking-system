@@ -22,6 +22,11 @@ import org.springframework.security.web.header.writers.XXssProtectionHeaderWrite
 
 import org.springframework.security.config.Customizer;
 
+/**
+ * Central security configuration hub for the application.
+ * Defines the security filter chain, stateless session management, JWT integration,
+ * and fine-grained access control rules for different user roles (Drivers/Passengers).
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -42,38 +47,30 @@ public class WebSecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
 
-                .cors(Customizer.withDefaults())
-                // 2. EDITED: Disable CSRF for stateless API, but configure for H2
+                .cors(Customizer.withDefaults()) // Apply default CORS settings
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/**") // Ignore for your stateless API
-                        .ignoringRequestMatchers("/h2-console/**") // Ignore for H2 console
+                        .ignoringRequestMatchers("/api/**")// Disable CSRF for stateless API
+                        .ignoringRequestMatchers("/h2-console/**")// Allow H2 console access
                 )
-                // 3. ADDED: Custom 401 Unauthorized handler
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(unauthorizedHandler)
+                        .authenticationEntryPoint(unauthorizedHandler) // Handle 401 Unauthorized
                 )
-                // 4. EDITED: Updated authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public auth endpoints
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll() // Public auth endpoints
+                        .requestMatchers("/h2-console/**").permitAll()// Public H2 console
 
-                        // H2 Console (for development only)
-                        .requestMatchers("/h2-console/**").permitAll()
-
-                        // Your existing app-specific rules
+                        // Role-based access control
                         .requestMatchers("/api/v1/cabs/**").hasRole("DRIVER")
                         .requestMatchers("/api/v1/bookings/driver/**").hasRole("DRIVER")
-                        .requestMatchers("/api/v1/bookings/customer/**").hasRole("CUSTOMER")
+                        .requestMatchers("/api/v1/bookings/customer/**").hasRole("PASSENGER")
 
-                        // All other requests must be authenticated
-                        .anyRequest().authenticated()
+                        .anyRequest().authenticated() // Secure all other endpoints
                 )
-                // We are stateless, so no sessions
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // 5. ADDED: Headers required for H2 console to work
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // No session cookies
+                )
                 .headers(headers -> headers
-                        .frameOptions( HeadersConfigurer.FrameOptionsConfig::sameOrigin) // Allows H2 console frames
+                        .frameOptions( HeadersConfigurer.FrameOptionsConfig::sameOrigin)// Allow H2 frames
                         .xssProtection(xss -> xss
                                 .headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
                         )
@@ -88,12 +85,19 @@ public class WebSecurityConfig {
         return http.build();
     }
 
+    /**
+     * Configures the AuthenticationProvider to use custom user lookup and password encoding.
+     * This bean is the bridge between Spring Security manager and our database-backed UserDetailsService.
+     */
     @Bean
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("deprecation") // Suppressing warning for standard Spring Boot 3 security configuration
     public AuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder, UserDetailsService userDetailsService) {
+
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);
+
+        authProvider.setUserDetailsService(userDetailsService); // Link custom user lookup logic
+        authProvider.setPasswordEncoder(passwordEncoder); // Set password validation strategy
+
         return authProvider;
     }
  

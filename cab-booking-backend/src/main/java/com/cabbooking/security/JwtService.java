@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -42,14 +41,13 @@ public class JwtService {
      * Generates a JWT for an authenticated user.
      * Includes the user's authorities as a custom claim.
      *
-     * @param authentication The Spring Security Authentication object.
      * @return A signed JWT string.
      */
-    public String generateToken(Authentication authentication) {
-        String username = authentication.getName();
+    public String generateToken(UserDetails userDetails) {
+        String username = userDetails.getUsername();
 
         // Extract authorities and convert them to a comma-separated string
-        String authorities = authentication.getAuthorities().stream()
+        String authorities = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
@@ -101,7 +99,7 @@ public class JwtService {
     }
 
     /**
-     * A generic function to extract a specific claim from   the token.
+     * A generic function to extract a specific claim from the token.
      */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         Claims claims = extractAllClaims(token);
