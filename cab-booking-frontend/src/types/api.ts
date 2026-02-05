@@ -21,14 +21,7 @@ export type SignupRequest = {
   roles?: string[]; // We make this optional on the frontend
 };
 
-// Corresponds to JwtResponse.java
-// We'll call it AuthResponse as this is a common frontend convention
-export type AuthResponse = {
-    token: string;
-    refreshToken: string;
-    user: User;
-    type: string; // e.g., "Bearer"
-};
+
 // Corresponds to MessageResponse.java
 export type MessageResponse = {
   message: string;

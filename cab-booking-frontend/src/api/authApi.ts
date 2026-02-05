@@ -1,12 +1,28 @@
 import axiosClient from './axiosClient';
 import type {
   LoginRequest,
-  AuthResponse,
   SignupRequest,
   MessageResponse,
   TokenRefreshRequest,
   TokenRefreshResponse,
 } from '@/types/api';
+
+import type {
+    PassengerSignupRequest,
+    DriverSignupRequest,
+    AuthResponse }
+    from '../types/auth';
+
+
+export const authApi = {
+    registerPassenger: (data: PassengerSignupRequest) =>
+        axiosClient.post<AuthResponse>('/auth/register/passenger', data),
+
+    registerDriver: (data: DriverSignupRequest) =>
+        axiosClient.post<AuthResponse>('/auth/signup/driver', data),
+
+    // ... other auth methods
+};
 
 /**
  * Sends a login request to the server.
