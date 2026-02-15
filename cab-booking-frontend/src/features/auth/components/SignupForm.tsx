@@ -1,172 +1,110 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signupSchema, type SignupFormInputs } from '../validation/authSchema';
-import { type SignupRequest } from '@/types/api';
+import { passengerSignupSchema, driverSignupSchema, PassengerFormData, DriverFormData } from '../validation/authSchema';
+import { registerDriver, registerPassenger } from '@/api/authApi';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/store/useAuthStore';
 
-// 1. Define the props. It's just like LoginForm.
-type SignupFormProps = {
-  onSubmit: (data: SignupRequest) => void;
-  isLoading: boolean;
-};
+type Role = 'passenger' | 'driver';
 
-const SignupForm = ({ onSubmit, isLoading }: SignupFormProps) => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignupFormInputs>({
-    // 2. Connect our *new* signupSchema
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-    },
-  });
+type FormData = PassengerFormData | DriverFormData;
 
-  // 3. This handler will be called by react-hook-form
-  // only if the validation is successful.
-  const handleFormSubmit = (data: SignupFormInputs) => {
-    // We pass the data up to the parent component.
-    // Note: We don't send `confirmPassword` to the API.
-    onSubmit({
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      password: data.password,
-      //roles are handled default logic if undefined
+const setCredentials = useAuthStore((state) => state.setCredentials);
+const navigate = useNavigate();
+
+export const SignupForm = () => {
+    const [role, setRole] = useState<Role>('passenger');
+    const [serverError, setServerError] = useState<string | null>(null);
+
+    // We switch the schema based on the selected role
+    const { register, handleSubmit, formState: { errors, isSubmitting }, reset} = useForm<FormData>({
+        resolver: zodResolver(role === 'passenger' ? passengerSignupSchema : driverSignupSchema),
     });
-  };
 
-  return (
-    <form
-      onSubmit={handleSubmit(handleFormSubmit)}
-      className="flex flex-col gap-4"
-    >
-      {/* Name Field */}
-      <div>
-        <label
-          htmlFor="name"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Full Name
-        </label>
-        <input
-          id="name"
-          type="text"
-          {...register('name')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          disabled={isLoading}
-        />
-        {errors.name && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.name.message}
-          </p>
-        )}
-      </div>
+    //Event Handlers
+    const onSubmit = async (data: any) => {
+        try {
+            setServerError(null);
+            if (role === 'passenger') {
+                await registerPassenger(data);
+            } else {
+                await registerDriver(data);
+            }
+            // Redirect to log in or auto-login here
+        } catch (err: any) {
+                setServerError(err.response?.data?.message || "Registration failed");
+        }
+    };
 
-      {/* Email Field */}
-      <div>
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          {...register('email')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          disabled={isLoading}
-        />
-        {errors.email && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.email.message}
-          </p>
-        )}
-      </div>
+    const handleRoleChange = (newRole: Role) => {
+        setRole(newRole);
+        reset(); // Clear form when switching roles
+    };
 
-        {/* Phone Field (NEW) */}
-        <div>
-            <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-gray-700"
-            >
-                Phone Number
-            </label>
-            <input
-                id="phone"
-                type="tel"
-                {...register('phone')}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                placeholder="e.g. 1234567890"
-                disabled={isLoading}
-            />
-            {errors.phone && (
-                <p className="mt-1 text-sm text-red-600">
-                    {errors.phone.message}
-                </p>
-            )}
+    return (
+        <div className="max-w-md mx-auto p-6 bg-white shadow-md rounded-lg">
+            <h2 className="text-2xl font-bold mb-4">Register as {role}</h2>
+
+            {/* Role Toggle */}
+            <div className="flex gap-4 mb-6">
+                <button
+                    onClick={() => handleRoleChange('passenger')}
+                    className={`px-4 py-2 rounded ${role === 'passenger' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                >
+                    Passenger
+                </button>
+                <button
+                    onClick={() => handleRoleChange('driver')}
+                    className={`px-4 py-2 rounded ${role === 'driver' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                >
+                    Driver
+                </button>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium">Email</label>
+                    <input {...register('email')} className="w-full border p-2 rounded" />
+                    {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium">Password</label>
+                    <input type="password" {...register('password')} className="w-full border p-2 rounded" />
+                    {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium">Phone Number</label>
+                    <input {...register('phoneNumber')} className="w-full border p-2 rounded" />
+                    {errors.phoneNumber && <p className="text-red-500 text-xs">{errors.phoneNumber.message}</p>}
+                </div>
+
+                {/* Conditional Field for Driver */}
+                {role === 'driver' && (
+                    <div>
+                        <label className="block text-sm font-medium">License Number</label>
+                        <input {...register('licenseNumber' as const)} className="w-full border p-2 rounded"/>
+
+                        {'licenseNumber' in errors && (
+                            <p className="text-red-500 text-xs">
+                                {errors.licenseNumber?.message as string}
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {serverError && <p className="text-red-600 font-bold">{serverError}</p>}
+
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
+                >
+                    {isSubmitting ? 'Registering...' : 'Sign Up'}
+                </button>
+            </form>
         </div>
-
-      {/* Password Field */}
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          {...register('password')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          disabled={isLoading}
-        />
-        {errors.password && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.password.message}
-          </p>
-        )}
-      </div>
-
-      {/* Confirm Password Field */}
-      <div>
-        <label
-          htmlFor="confirmPassword"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Confirm Password
-        </label>
-        <input
-          id="confirmPassword"
-          type="password"
-          {...register('confirmPassword')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          disabled={isLoading}
-        />
-        {/* This error will show our custom .refine() message! */}
-        {errors.confirmPassword && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.confirmPassword.message}
-          </p>
-        )}
-      </div>
-
-      {/* Submit Button */}
-      <button
-        type="submit"
-        className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-        disabled={isLoading}
-      >
-        {isLoading ? 'Creating account...' : 'Create Account'}
-      </button>
-    </form>
-  );
+    );
 };
-
-export default SignupForm;

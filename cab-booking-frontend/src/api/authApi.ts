@@ -13,15 +13,20 @@ import type {
     AuthResponse }
     from '../types/auth';
 
+export const registerPassenger = async (
+    data: PassengerSignupRequest
+): Promise<AuthResponse> => {
+    // We wrap this in a try/catch if we want global logging,
+    // otherwise, let the caller (like TanStack Query) handle the error.
+    const {data: response} = await axiosClient.post<AuthResponse>('/auth/register/passenger', data);
+    return response;
+};
 
-export const authApi = {
-    registerPassenger: (data: PassengerSignupRequest) =>
-        axiosClient.post<AuthResponse>('/auth/register/passenger', data),
-
-    registerDriver: (data: DriverSignupRequest) =>
-        axiosClient.post<AuthResponse>('/auth/signup/driver', data),
-
-    // ... other auth methods
+export const registerDriver = async (
+    data: DriverSignupRequest
+): Promise<AuthResponse> => {
+    const {data: response} = await axiosClient.post<AuthResponse>('/auth/signup/driver', data);
+    return response;
 };
 
 /**
@@ -29,19 +34,11 @@ export const authApi = {
  * Corresponds to: POST /api/auth/signin
  */
 export const login = async (data: LoginRequest): Promise<AuthResponse> => {
-  // We use .data because axios wraps the response
-  const { data: response } = await axiosClient.post('v1/auth/login', data);
-  return response;
+    // We use .data because axios wraps the response
+    const { data: response } = await axiosClient.post('v1/auth/login', data);
+    return response;
 };
 
-/**
- * Sends a signup request to the server.
- * Corresponds to: POST /api/auth/signup
- */
-export const signup = async (data: SignupRequest): Promise<MessageResponse> => {
-  const { data: response } = await axiosClient.post('v1/auth/signup', data);
-  return response;
-};
 
 /**
  * Sends a logout request to the server.
