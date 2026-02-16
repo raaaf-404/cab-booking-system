@@ -9,12 +9,14 @@ interface AuthState {
   user: User | null;
   
   // Actions to update the state
-  login: (data: {
+    setCredentials: (data: {
     token: string;
     refreshToken: string;
     user: User;
   }) => void;
-  logout: () => void;
+
+
+  clearCredentials: () => void;
 }
 
 // 2. Create the store
@@ -23,19 +25,19 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       // 4. Initial state
-      token: null,
-      refreshToken: null,
-      user: null,
+        token: null,
+        refreshToken: null,
+        user: null,
 
-      // 5. Actions
-      login: (data) =>
-        set({
-          token: data.token,
-          refreshToken: data.refreshToken,
-          user: data.user,
-        }),
+        //Actions
+        setCredentials: (data) =>
+            set({
+                token: data.token,
+                refreshToken: data.refreshToken,
+                user: data.user,
+            }),
 
-      logout: () =>
+      clearCredentials: () =>
         set({
           token: null,
           refreshToken: null,
@@ -45,7 +47,6 @@ export const useAuthStore = create<AuthState>()(
     {
       // 6. Configuration for persistence
       name: 'auth-storage', // The key in localStorage
-      // By default, it uses localStorage. We don't need to specify it.
     }
   )
 );
