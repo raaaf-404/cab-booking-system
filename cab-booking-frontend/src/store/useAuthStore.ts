@@ -1,22 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { type User } from '@/types/api';
+import { type AuthResponse } from '@/types/auth.ts';
 
 // 1. Define the shape of your store's state
 interface AuthState {
-  token: string | null;
-  refreshToken: string | null;
-  user: User | null;
-  
-  // Actions to update the state
-    setCredentials: (data: {
-    token: string;
-    refreshToken: string;
-    user: User;
-  }) => void;
+    accessToken: string | null;
+    refreshToken: string | null;
+    user: User | null;
 
+    // Actions to update the state
+    setCredentials: (data: AuthResponse) => void;
 
-  clearCredentials: () => void;
+    clearCredentials: () => void;
 }
 
 // 2. Create the store
@@ -25,21 +21,21 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       // 4. Initial state
-        token: null,
+        accessToken: null,
         refreshToken: null,
         user: null,
 
         //Actions
         setCredentials: (data) =>
             set({
-                token: data.token,
+                accessToken: data.accessToken,
                 refreshToken: data.refreshToken,
                 user: data.user,
             }),
 
       clearCredentials: () =>
         set({
-          token: null,
+            accessToken: null,
           refreshToken: null,
           user: null,
         }),
