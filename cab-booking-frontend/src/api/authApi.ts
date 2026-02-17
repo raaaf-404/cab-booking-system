@@ -1,7 +1,6 @@
 import axiosClient from './axiosClient';
 import type {
   LoginRequest,
-  SignupRequest,
   MessageResponse,
   TokenRefreshRequest,
   TokenRefreshResponse,
