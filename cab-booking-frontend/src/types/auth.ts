@@ -1,3 +1,5 @@
+import {type User} from './api';
+
 // Shared fields between both roles
 export interface BaseSignupRequest {
     email: string;
@@ -15,6 +17,5 @@ export interface DriverSignupRequest extends BaseSignupRequest {
 export interface AuthResponse {
     accessToken: string;
     refreshToken: string;
-    email: string;
-    roles: string[];
+    user: User;
 }
