@@ -1,11 +1,13 @@
 // ==========================================
+
+export type AppRole = 'passenger' | 'driver' | 'admin';
 // 1. CORE DOMAIN MODELS (The "Things")
 // ==========================================
 // Corresponds to UserResponse.java
 export interface User {
   id: number;
   email: string;
-  roles: string[];
+  roles: AppRole[];
 }
 
 
