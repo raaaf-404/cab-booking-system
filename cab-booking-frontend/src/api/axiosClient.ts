@@ -1,14 +1,10 @@
 import axios , { AxiosError, InternalAxiosRequestConfig}from 'axios';
-import { useAuthStore } from '@/store/useAuthStore'; // We'll create this store in the next step
+import { useAuthStore } from '@/store/useAuthStore'
 
-// 1. Get the backend URL.
-// We'll hardcode it for now, but in a real app, this should come 
-// from an environment variable (e.g., import.meta.env.VITE_API_URL)
-const API_BASE_URL = 'http://localhost:8080/api';
 
 // 1. Create the main instance
 const axiosClient = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: import.meta.env.VITE_API_URL,
     headers: {
       'Content-Type': 'application/json',
     },
@@ -18,6 +14,7 @@ const axiosClient = axios.create({
 
 // 2. Flags and Queue for Concurrency Management
 let isRefreshing = false;
+
 let  failedQueue: Array<{
     resolve: (token: string) => void,
     reject: (error: any) => void
@@ -26,10 +23,10 @@ let  failedQueue: Array<{
 // Helper to process the queue
 const processQueue = (error: any, token: string | null = null) => {
     failedQueue.forEach((prom) => {
-        if (error) {
+        if (error || !token) {
             prom.reject(error);
         } else {
-            prom.resolve(token!);
+            prom.resolve(token);
         }
     });
     failedQueue = [];
@@ -47,15 +44,11 @@ axiosClient.interceptors.request.use(
         (error) => Promise.reject(error)
 );
 
-
 // 4. Create a reusable cleanup function
 const handleSessionFailure = (error: any) => {
-    // A. Clear the queue
-    processQueue(error, null);
-    // B. Clear Credentials
-    useAuthStore.getState().clearCredentials();
-    // C. Return the rejection
-    return Promise.reject(error);
+    processQueue(error, null);    // A. Clear the queue
+    useAuthStore.getState().clearCredentials();     // B. Clear Credentials
+    return Promise.reject(error);     // C. Return the rejection
 };
 
 // 5. Response Interceptor: Handles 401 Errors
@@ -68,10 +61,8 @@ axiosClient.interceptors.response.use(
         if (error.response?.status !== 401 || originalRequest._retry) {
             return Promise.reject(error);
         }
-
         // Mark this request as a retry to prevent infinite loops
         originalRequest._retry = true;
-
         // A. If refreshing is already in progress, queue this request
         if (isRefreshing) {
             return new Promise((resolve, reject) => {
@@ -86,7 +77,6 @@ axiosClient.interceptors.response.use(
                 });
             });
         }
-
         // B. If not refreshing, start the refresh process
         isRefreshing = true;
 
@@ -106,7 +96,7 @@ axiosClient.interceptors.response.use(
             // We use a clean axios instance to avoid interceptors on the refresh call itself
             // This prevents circular dependencies and infinite loops
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/auth/refresh-token`,
+                `${import.meta.env.VITE_API_URL}/auth/refresh-token`,
                 { refreshToken }
             );
 
