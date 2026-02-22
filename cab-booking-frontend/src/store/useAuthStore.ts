@@ -8,11 +8,10 @@ interface AuthState {
     accessToken: string | null;
     refreshToken: string | null;
     user: User | null;
-
-    // Actions to update the state
+    isHydrated: boolean;
     setCredentials: (data: AuthResponse) => void;
-
     clearCredentials: () => void;
+    setHydrated: (state: boolean) => void;
 }
 
 // 2. Create the store
@@ -24,6 +23,7 @@ export const useAuthStore = create<AuthState>()(
         accessToken: null,
         refreshToken: null,
         user: null,
+        isHydrated: false,
 
         //Actions
         setCredentials: (data) =>
@@ -39,10 +39,14 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           user: null,
         }),
+        setHydrated: (state) => set({isHydrated: state}),
     }),
     {
       // 6. Configuration for persistence
       name: 'auth-storage', // The key in localStorage
+      onRehydrateStorage: () => (state) => {
+          state?.setHydrated(true);
+      },
     }
   )
 );
