@@ -1,71 +1,72 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { signup as signupApi } from '@/api/authApi';
-import SignupForm from '../components/SignupForm';
-import { type SignupRequest, type MessageResponse } from '@/types/api';
 import { AxiosError } from 'axios';
 
-const SignupPage = () => {
-  const navigate = useNavigate();
-  // We'll use state to show a success message
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+// Stores & APIs
+import { useAuthStore } from '@/store/useAuthStore';
+import { registerDriver, registerPassenger } from '@/api/authApi';
+// Types
+import { PassengerFormData, DriverFormData } from '../validation/authSchema';
+import { PassengerSignupRequest, DriverSignupRequest } from '@/types/auth';
+import { Role } from '../components/SignupForm';
+// Components
+import { SignupForm } from '../components/SignupForm';
 
-  // 1. Set up the mutation hook
-  const { mutate: signupUser, isPending, error } = useMutation<
-    MessageResponse, // On success, we get a MessageResponse
-    AxiosError,      // On error, we get an AxiosError
-    SignupRequest    // We send a SignupRequest
-  >({
-    mutationFn: signupApi,
-    onSuccess: (data) => {
-      // 2. On success, show the message
-      setSuccessMessage(data.message + ' You will be redirected to login.');
+// 1. Mutation Args now strictly demand the API Contract types
+interface SignupArgs {
+    data: PassengerSignupRequest | DriverSignupRequest;
+    role: Role;
+}
 
-      // 3. Redirect to the login page after 3 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-    },
-    // onError is handled by the 'error' variable
-  });
+export const SignupPage = () => {
+    const navigate = useNavigate();
+    const setCredentials = useAuthStore((state) => state.setCredentials);
 
-  // 4. Handle the form submission
-  const handleSubmit = (data: SignupRequest) => {
-    setSuccessMessage(null); // Clear any old messages
-    signupUser(data);
-  };
+    // 1. Set up the Mutation
+    const { mutate: signupUser, isPending, error } = useMutation({
+        // The mutation function decides which endpoint to hit based on the role
+        mutationFn: (args: SignupArgs) => {
+            if (args.role === 'passenger') {
+                return registerPassenger(args.data as PassengerSignupRequest);
+            }
+            return registerDriver(args.data as DriverSignupRequest);
+        },
 
-  // 5. Best Practice: Show a success UI, don't just flash and redirect
-  if (successMessage) {
+        // 2. On Success: Auto-login and Redirect!
+        onSuccess: (response) => {
+            // Save tokens & user data directly to global state
+            setCredentials(response);
+
+            // Determine the dashboard based on the role returned from the server
+            const userRole = response.user?.role?.toLowerCase();
+            const dashboardPath = userRole === 'driver' ? '/driver/dashboard' : '/passenger/dashboard';
+            // Redirect
+            navigate(dashboardPath, { replace: true });
+        },
+    });
+
+    // 3. Handle the form submission from the dumb component
+    const handleSignupSubmit = (data: PassengerFormData | DriverFormData, role: Role) => {
+            signupUser({ data, role });
+    };
+
+    // 4. Extract standard Axios error
+    const serverError = error instanceof AxiosError
+        ? error.response?.data?.message || "Registration failed. Please try again or use a different email."
+        : null;
+
     return (
-      <div className="mx-auto mt-10 max-w-md rounded-lg bg-white p-8 text-center shadow-md">
-        <h1 className="mb-4 text-3xl font-bold text-green-600">
-          Account Created!
-        </h1>
-        <p className="text-lg text-gray-700">{successMessage}</p>
-      </div>
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8 py-12">
+            <div className="w-full max-w-md">
+                {/* We pass our handler, loading state, and error to the presentational component */}
+                <SignupForm
+                    onSubmit={handleSignupSubmit}
+                    isLoading={isPending}
+                    serverError={serverError}
+                />
+            </div>
+        </div>
     );
-  }
-
-  // 6. Render the form if we are not in a success state
-  return (
-    <div className="mx-auto mt-10 max-w-md rounded-lg bg-white p-8 shadow-md">
-      <h1 className="mb-6 text-center text-3xl font-bold text-gray-800">
-        Create an Account
-      </h1>
-
-      <SignupForm onSubmit={handleSubmit} isLoading={isPending} />
-
-      {/* 7. Best Practice: Show the *actual* error from the server */}
-      {error && (
-        <p className="mt-4 text-center text-sm text-red-600">
-          {(error.response?.data as MessageResponse)?.message ||
-            'An unknown error occurred.'}
-        </p>
-      )}
-    </div>
-  );
 };
 
 export default SignupPage;
