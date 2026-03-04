@@ -7,7 +7,7 @@ export type AppRole = 'passenger' | 'driver' | 'admin';
 export interface User {
   id: number;
   email: string;
-  roles: AppRole[];
+  role: AppRole;
 }
 
 
