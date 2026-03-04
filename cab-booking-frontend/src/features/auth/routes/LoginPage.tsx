@@ -25,7 +25,6 @@ export const LoginPage = () => {
     const { mutate: loginUser, isPending, error } = useMutation({
         mutationFn: (data: LoginRequest) => login(data),
 
-        // 3. onSuccess: Handles the logic AFTER a successful API call
         onSuccess: (response) => {
             // A. Save tokens & user data to global state
             setCredentials(response);
@@ -37,7 +36,7 @@ export const LoginPage = () => {
 
             // Determine role-based fallback dashboard
             // Safety check: ensure response.data.user.role exists!
-            const userRole = response.user?.roles?.toLowerCase();
+            const userRole = response.user?.role;
             const defaultDashboard = userRole === 'driver' ? '/driver/dashboard' : '/passenger/dashboard';
 
             // Navigate using Intended Destination, or fallback to Default Dashboard
@@ -67,7 +66,6 @@ export const LoginPage = () => {
                 </div>
 
                 {/* 6. Render the "Dumb" form component */}
-                {/* We pass the mutate function directly, along with Tanstack's isPending state */}
                 <LoginForm
                     onSubmit={loginUser}
                     isLoading={isPending}
