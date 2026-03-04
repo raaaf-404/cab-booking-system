@@ -11,7 +11,7 @@ export interface BaseSignupRequest {
 export interface PassengerSignupRequest extends BaseSignupRequest {}
 
 export interface DriverSignupRequest extends BaseSignupRequest {
-    licenseNumber: number;
+    licenseNumber: string;
 }
 
 export interface AuthResponse {
