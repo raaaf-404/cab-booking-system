@@ -1,69 +1,79 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { useAuthStore } from '@/store/useAuthStore';
-import { login as loginApi } from '@/api/authApi';
-import LoginForm from '../components/LoginForm';
-import { type LoginRequest, type AuthResponse } from '@/types/api';
 import { AxiosError } from 'axios';
 
-const LoginPage = () => {
-  // Hook for programmatic navigation
-  const navigate = useNavigate();
-  
-  // Get the 'login' action from our Zustand store
-  const { login: loginToStore } = useAuthStore();
+// API & Store
+import { login } from '@/api/authApi';
+import { useAuthStore } from '@/store/useAuthStore';
+import { type LoginRequest } from '@/types/api';
 
-  // 1. Set up the mutation hook from TanStack Query
-  const { mutate: loginUser, isPending, error } = useMutation<
-    AuthResponse, // Type of the data on success
-    AxiosError,    // Type of the error
-    LoginRequest   // Type of the data passed to the mutate function
-  >({
-    mutationFn: loginApi, // The function to call (POST /api/auth/signin)
+// Components
+import LoginForm from '../components/LoginForm';
 
-    // 2. Handle success
-    onSuccess: (data) => {
-      // Save user, token, and refreshToken to our Zustand store
-      loginToStore({
-        token: data.token,
-        refreshToken: data.refreshToken,
-        user: data.user,
-      });
+// Adjust this type based on exactly what your backend AuthResponse looks like
+interface ApiErrorResponse {
+    message: string;
+}
 
-      // Redirect to the homepage
-      navigate('/');
-    },
+export const LoginPage = () => {
+    // 1. Hooks for Global State and Routing
+    const setCredentials = useAuthStore((state) => state.setCredentials);
+    const navigate = useNavigate();
+    const location = useLocation();
 
-    // 3. Handle error (onStatus 400, 500, etc.)
-    // We don't need to do much here, as the 'error' variable
-    // will be set, and we can display it.
-  });
+    // 2. TanStack Query Mutation (The Industry Standard for API calls)
+    const { mutate: loginUser, isPending, error } = useMutation({
+        mutationFn: (data: LoginRequest) => login(data),
 
-  // 4. Handle the form submission
-  const handleSubmit = (data: LoginRequest) => {
-    // This calls the mutationFn with the form data
-    loginUser(data);
-  };
+        onSuccess: (response) => {
+            // A. Save tokens & user data to global state
+            setCredentials(response);
 
-  // 5. This is our "smart" page component
-  return (
-    <div className="mx-auto mt-10 max-w-md rounded-lg bg-white p-8 shadow-md">
-      <h1 className="mb-6 text-center text-3xl font-bold text-gray-800">
-        Sign In
-      </h1>
-      
-      {/* 6. Render the "dumb" form component */}
-      <LoginForm onSubmit={handleSubmit} isLoading={isPending} />
+            // B. --- THE REDIRECT LOGIC ---
 
-      {/* 7. Display server-side errors */}
-      {error && (
-        <p className="mt-4 text-center text-sm text-red-600">
-          {/* A more robust solution would check error.response.data.message */}
-          Invalid username or password.
-        </p>
-      )}
-    </div>
-  );
+            // Did the ProtectedRoute send them here from a specific URL?
+            const intendedDestination = location.state?.from?.pathname;
+
+            // Determine role-based fallback dashboard
+            // Safety check: ensure response.data.user.role exists!
+            const userRole = response.user?.role;
+            const defaultDashboard = userRole === 'driver' ? '/driver/dashboard' : '/passenger/dashboard';
+
+            // Navigate using Intended Destination, or fallback to Default Dashboard
+            const navigateTo = intendedDestination || defaultDashboard;
+
+            // Navigate with 'replace: true' to prevent breaking the browser's Back button
+            navigate(navigateTo, { replace: true });
+        },
+    });
+
+    // 4. Extract dynamic error message from Axios error
+    const serverError = error instanceof AxiosError
+        ? (error.response?.data as ApiErrorResponse)?.message || "Invalid email or password. Please try again."
+        : null;
+
+    // 5. Presentational Wrapper
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+                <div>
+                    <h2 className="text-center text-3xl font-extrabold text-gray-900">
+                        Welcome Back
+                    </h2>
+                    <p className="mt-2 text-center text-sm text-gray-600">
+                        Sign in to your account to continue
+                    </p>
+                </div>
+
+                {/* 6. Render the "Dumb" form component */}
+                <LoginForm
+                    onSubmit={loginUser}
+                    isLoading={isPending}
+                    serverError={serverError}
+                />
+            </div>
+        </div>
+    );
 };
 
 export default LoginPage;

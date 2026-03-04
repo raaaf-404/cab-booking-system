@@ -1,20 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { type User } from '@/types/api';
+import { type AuthResponse } from '@/types/auth.ts';
 
 // 1. Define the shape of your store's state
 interface AuthState {
-  token: string | null;
-  refreshToken: string | null;
-  user: User | null;
-  
-  // Actions to update the state
-  login: (data: {
-    token: string;
-    refreshToken: string;
-    user: User;
-  }) => void;
-  logout: () => void;
+    accessToken: string | null;
+    refreshToken: string | null;
+    user: User | null;
+    isHydrated: boolean;
+    setCredentials: (data: AuthResponse) => void;
+    clearCredentials: () => void;
+    setHydrated: (state: boolean) => void;
 }
 
 // 2. Create the store
@@ -23,29 +20,33 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       // 4. Initial state
-      token: null,
-      refreshToken: null,
-      user: null,
+        accessToken: null,
+        refreshToken: null,
+        user: null,
+        isHydrated: false,
 
-      // 5. Actions
-      login: (data) =>
-        set({
-          token: data.token,
-          refreshToken: data.refreshToken,
-          user: data.user,
-        }),
+        //Actions
+        setCredentials: (data) =>
+            set({
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+                user: data.user,
+            }),
 
-      logout: () =>
+      clearCredentials: () =>
         set({
-          token: null,
+            accessToken: null,
           refreshToken: null,
           user: null,
         }),
+        setHydrated: (state) => set({isHydrated: state}),
     }),
     {
       // 6. Configuration for persistence
       name: 'auth-storage', // The key in localStorage
-      // By default, it uses localStorage. We don't need to specify it.
+      onRehydrateStorage: () => (state) => {
+          state?.setHydrated(true);
+      },
     }
   )
 );
