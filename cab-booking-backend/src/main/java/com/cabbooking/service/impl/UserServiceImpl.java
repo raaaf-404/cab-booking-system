@@ -30,7 +30,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<UserResponse> getUserById(Long userId) {
         return userRepository.findById(userId)
-                .map(userMapper::mapToUserResponse);
+                .map(userMapper::toResponse);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
 
-        if (!driver.getRoles().contains(UserRole.ROLE_DRIVER)) {
+        if (driver.getRole() != UserRole.ROLE_DRIVER) {
             throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
         }
         return driver;
@@ -63,8 +63,9 @@ public class UserServiceImpl implements UserService {
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .phoneNumber(phoneNumber)
+                .role(role)
                 .build();
-        user.addRole(role);
+
         return userRepository.save(user);
     }
 
@@ -73,6 +74,6 @@ public class UserServiceImpl implements UserService {
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> userPage = userRepository.findAll(pageable);
 
-        return userPage.map(userMapper::mapToUserResponse);
+        return userPage.map(userMapper::toResponse);
     }
 }
