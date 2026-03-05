@@ -1,6 +1,7 @@
 import axiosClient from './axiosClient';
 import type {
   LoginRequest,
+  LogoutRequest,
   MessageResponse,
   TokenRefreshRequest,
   TokenRefreshResponse,
@@ -27,10 +28,8 @@ export const registerDriver = async (
     const {data: response} = await axiosClient.post<AuthResponse>('/auth/signup/driver', data);
     return response;
 };
-
 /**
  * Sends a login request to the server.
- * Corresponds to: POST /api/auth/signin
  */
 export const login = async (data: LoginRequest): Promise<AuthResponse> => {
     // We use .data because axios wraps the response
@@ -38,19 +37,16 @@ export const login = async (data: LoginRequest): Promise<AuthResponse> => {
     return response;
 };
 
-
 /**
  * Sends a logout request to the server.
- * Corresponds to: POST /api/auth/signout
  */
-export const logout = async (): Promise<MessageResponse> => {
-  const { data: response } = await axiosClient.post('/auth/signout');
+export const logout = async (data: LogoutRequest): Promise<MessageResponse> => {
+  const { data: response } = await axiosClient.post('/auth/logout', data);
   return response;
 };
 
 /**
  * Sends a token refresh request to the server.
- * Corresponds to: POST /api/auth/refreshtoken
  */
 export const refreshToken = async (
   data: TokenRefreshRequest
