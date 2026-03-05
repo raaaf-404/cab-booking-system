@@ -1,77 +1,37 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useLogout } from '@/features/auth/hooks/useLogout';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useMutation } from '@tanstack/react-query';
-import { logout as logoutApi } from '@/api/authApi';
+import { Link } from 'react-router-dom';
 
-const Navbar = () => {
-  // 1. Get state and actions from our store
-  const { user, logout: logoutFromStore } = useAuthStore();
-  const navigate = useNavigate();
+export const Navbar = () => {
+    const user = useAuthStore((state) => state.user);
+    const { mutate: logoutUser, isPending } = useLogout();
 
-  // 2. Create a mutation to call the logout API
-  const { mutate: logoutUser, isPending } = useMutation({
-    mutationFn: logoutApi, // Points to our API function
+    return (
+        <nav className="flex justify-between items-center p-4 bg-white shadow-sm">
+            <div className="font-bold text-xl">CabBooking</div>
 
-    // 3. Use 'onSettled' for logout
-    // This runs after the mutation is successful *or* fails.
-    // We want to log the user out locally no matter what.
-    onSettled: () => {
-      // Clear the user data from Zustand and localStorage
-      logoutFromStore();
-      
-      // Redirect to the login page
-      navigate('/login');
-    },
-  });
-
-  // 4. Update the handler to call the mutation
-  const handleLogout = () => {
-    logoutUser();
-  };
-
-  return (
-    <nav className="flex items-center justify-between bg-gray-800 p-4 text-white">
-      <Link to="/" className="text-xl font-bold">
-        CabBooking
-      </Link>
-
-      <div className="flex gap-4">
-        {/* Public Links */}
-        <Link to="/" className="hover:text-gray-300">
-          Home
-        </Link>
-
-        {user ? (
-          // --- Show these links if user IS logged in ---
-          <>
-            <Link to="/profile" className="hover:text-gray-300">
-              Profile ({user.username})
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="rounded bg-red-600 px-3 py-1 text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-              disabled={isPending} // 5. Disable button while logging out
-            >
-              {isPending ? 'Logging out...' : 'Logout'}
-            </button>
-          </>
-        ) : (
-          // --- Show these links if user is NOT logged in ---
-          <>
-            <Link to="/login" className="hover:text-gray-300">
-              Login
-            </Link>
-            <Link
-              to="/signup"
-              className="rounded bg-blue-600 px-3 py-1 text-sm font-medium hover:bg-blue-700"
-            >
-              Sign Up
-            </Link>
-          </>
-        )}
-      </div>
-    </nav>
-  );
+            {user ? (
+                <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-600">
+                        Welcome, {user.email}
+                    </span>
+                    <button
+                        onClick={() => logoutUser()}
+                        disabled={isPending}
+                        className="bg-red-50 text-red-600 px-4 py-2 rounded hover:bg-red-100 disabled:opacity-50 transition-colors"
+                    >
+                        {isPending ? 'Logging out...' : 'Logout'}
+                    </button>
+                </div>
+            ) : (
+                // Links for unauthenticated users
+                <div className="flex gap-4">
+                        <Link to="/login" className="text-blue-600">Login</Link>
+                    <Link to="/signup" className="bg-blue-600 text-white px-4 py-2 rounded">Sign Up</Link>
+                </div>
+            )}
+        </nav>
+    );
 };
 
 export default Navbar;
