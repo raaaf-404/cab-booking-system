@@ -38,6 +38,10 @@ export type LoginRequest = {
   email: string;
   password: string;
 };
+
+export type LogoutRequest = {
+    refreshToken: string;
+}
 // Corresponds to SignupRequest.java
 export type SignupRequest = {
   name: string;
