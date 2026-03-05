@@ -1,24 +1,20 @@
 package com.cabbooking.dto.response;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
+import com.cabbooking.model.enums.UserRole;
 import java.time.LocalDateTime;
-import java.util.Set;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class UserResponse {
-    private Long id;
-    private String name;
-    private String email;
-    private String phone;
-    private String profilePicture;
-    private Boolean isActive;
-    private Set<String> roles;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    
-}
+/**
+ * Modern Java Record for User Response.
+ * Immutability by default ensures thread-safety and data integrity.
+ */
+public record UserResponse(
+        Long id,
+        String name,
+        String email,
+        String phoneNumber,
+        String profilePicture,
+        Boolean isActive,
+        UserRole role,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {}

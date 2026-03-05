@@ -115,19 +115,15 @@ public class AuthServiceImpl implements AuthService {
         // 2. GENERATE REFRESH TOKEN HERE
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
-        Set<String> roleNames = user.getRoles().stream()
-                .map(Enum::name)
-                .collect(Collectors.toSet());
-
-        if (roleNames.isEmpty()) {
-            roleNames.add(UserRole.ROLE_PASSENGER.name());
+        if (user.getRole() == null) {
+            user.setRole(UserRole.ROLE_PASSENGER);
         }
 
         return AuthResponse.builder()
                 .token(jwtToken)
                 .refreshToken(refreshToken.getToken())
                 .email(user.getEmail())
-                .roles(roleNames)
+                .role(user.getRole())
                 .build();
     }
 }

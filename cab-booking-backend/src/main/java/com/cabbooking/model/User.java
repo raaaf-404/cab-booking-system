@@ -30,6 +30,10 @@ public class User extends  BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank
+    @Column(nullable = false, unique = true)
+    private String name;
+
     @Email
     @NotBlank
     @Column(nullable = false, unique = true)
@@ -48,33 +52,16 @@ public class User extends  BaseEntity {
     @Column(name="is_active", nullable = false)
     private Boolean isActive = true;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    @Builder.Default
-    private Set<UserRole> roles = new HashSet<>();
+    @Column(name = "role", nullable = false)
+    private UserRole role;
 
     // --- Helper Methods ---
-
     /**
      * Use this for business logic to check if a user has access.
      */
-    public boolean hasRole(UserRole role) {
-        return roles != null && roles.contains(role);
+    public boolean hasRole(UserRole targetRole) {
+        return this.role == targetRole;
     }
 
-    public void addRole(UserRole role) {
-        if (this.roles == null) {
-            this.roles = new HashSet<>();
-        }
-        this.roles.add(role);
-    }
-
-    /**
-     * Prevents external classes from modifying the set directly.
-     */
-    public Set<UserRole> getRoles() {
-        return roles == null ? Set.of() : Collections.unmodifiableSet(roles);
-    }
 }

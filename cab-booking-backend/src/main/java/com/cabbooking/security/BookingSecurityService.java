@@ -7,6 +7,7 @@ import com.cabbooking.repository
 import com.cabbooking.repository.CabRepository;
 import com.cabbooking.repository.UserRepository;
 import com.cabbooking.model.User;
+import com.cabbooking.model.enums.UserRole;
 import com.cabbooking.model.Booking;
 import com.cabbooking.model.Cab;
 import com.cabbooking.repository.CabRepository;
@@ -53,7 +54,7 @@ public class BookingSecurityService {
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
 
         //Validation
-        if (!driver.getRole().contains(User.Role.DRIVER)) {
+        if (driver.getRole() != UserRole.ROLE_DRIVER) {
             throw new IllegalArgumentException("User with id " + driverId + " is not a DRIVER.");
         }
         if (booking.getStatus() != Booking.BookingStatus.PENDING) {

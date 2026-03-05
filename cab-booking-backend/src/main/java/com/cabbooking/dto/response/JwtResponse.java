@@ -1,6 +1,6 @@
 package com.cabbooking.dto.response;
 
-import com.cabbooking.model.User.Role;
+import com.cabbooking.model.enums.UserRole;
 import java.util.List;
 
 /**
@@ -23,10 +23,10 @@ public record JwtResponse(
         Long id,
         String username,
         String email,
-        List<String> roles,
+        UserRole role,
         String tokenType
 ) {
-    public JwtResponse(String accessToken, String refreshToken, Long id, String username, String email, List<String> roles) {
-        this(accessToken, refreshToken, id, username, email, roles, "Bearer");
+    public JwtResponse(String accessToken, String refreshToken, Long id, String username, String email, UserRole role) {
+        this(accessToken, refreshToken, id, username, email, role, "Bearer");
     }
 }

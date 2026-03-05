@@ -5,7 +5,6 @@ import com.cabbooking.dto.request.CabUpdateAvailabilityStatusRequest;
 import com.cabbooking.dto.response.BookingResponse;
 import com.cabbooking.exception.ResourceNotFoundException;
 import com.cabbooking.model.Booking;
-import com.cabbooking.model.User.Role;
 import com.cabbooking.model.Cab;
 import com.cabbooking.model.User;
 import com.cabbooking.repository.BookingRepository;
