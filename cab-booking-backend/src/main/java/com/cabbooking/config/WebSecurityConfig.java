@@ -50,14 +50,12 @@ public class WebSecurityConfig {
                 .cors(Customizer.withDefaults()) // Apply default CORS settings
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers("/api/**")// Disable CSRF for stateless API
-                        .ignoringRequestMatchers("/h2-console/**")// Allow H2 console access
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(unauthorizedHandler) // Handle 401 Unauthorized
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll() // Public auth endpoints
-                        .requestMatchers("/h2-console/**").permitAll()// Public H2 console
 
                         // Role-based access control
                         .requestMatchers("/api/v1/cabs/**").hasRole("DRIVER")
@@ -70,7 +68,6 @@ public class WebSecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // No session cookies
                 )
                 .headers(headers -> headers
-                        .frameOptions( HeadersConfigurer.FrameOptionsConfig::sameOrigin)// Allow H2 frames
                         .xssProtection(xss -> xss
                                 .headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
                         )
