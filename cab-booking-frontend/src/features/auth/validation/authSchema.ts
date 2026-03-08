@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 // Base schema matching your Java @Pattern and @Size constraints
 const baseSchema = {
+    name: z.string().min(1, "Name is required"),
     email: z.email("Invalid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     phoneNumber: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number"),
@@ -22,13 +23,13 @@ export type DriverFormData = z.infer<typeof driverSignupSchema>;
 
 // This schema validates the data for our login form
 export const loginSchema = z.object({
-  email: z
-      .string()
-      .min(1, 'Username is required')
-      .email('Please provide a valid email address'),
-  password: z
-      .string()
-      .min(1, 'Password is required'),
+    email: z
+        .string()
+        .min(1, 'Username is required')
+        .email('Please provide a valid email address'),
+    password: z
+        .string()
+        .min(1, 'Password is required'),
 });
 
 export type LoginFormInputs = z.infer<typeof loginSchema>;
