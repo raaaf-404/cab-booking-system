@@ -5,6 +5,7 @@ import SignupPage from '@/features/auth/routes/SignupPage';
 import MainLayout from '@/components/layout/MainLayout';
 import ProfilePage from '@/features/profile/routes/ProfilePage';
 import ProtectedRoute from './ProtectedRoute';
+import NotFoundPage from "@/components/pages/NotFoundPage.tsx";
 
 // Assuming you have these imported
 // import PassengerDashboard from '...';
@@ -87,6 +88,14 @@ export const router = createBrowserRouter([
                     },
                 ],
             },
+
+            // ==========================================
+            // 4. NO Pages Found
+            // ==========================================
+            {
+                path: '*',
+                element: <NotFoundPage />
+            }
         ],
     },
 ]);
