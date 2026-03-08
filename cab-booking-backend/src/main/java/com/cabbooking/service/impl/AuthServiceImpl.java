@@ -5,16 +5,16 @@ import com.cabbooking.dto.request.LoginRequest;
 import com.cabbooking.dto.request.PassengerSignupRequest;
 import com.cabbooking.dto.request.DriverSignupRequest;
 
+import com.cabbooking.dto.response.UserResponse;
 import com.cabbooking.model.User;
 import com.cabbooking.model.RefreshToken;
 
 import com.cabbooking.security.UserPrincipal;
 
-
 import com.cabbooking.model.enums.UserRole;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.cabbooking.mapper.UserMapper;
+
 
 import com.cabbooking.service.AuthService;
 import com.cabbooking.service.RefreshTokenService;
@@ -36,11 +36,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j // For logging
 public class AuthServiceImpl implements AuthService {
 
-
     private final UserService userService;
     private final PassengerService passengerService;
     private final DriverService driverService;
     private final JwtService jwtService;
+    private final UserMapper userMapper;
 
     private final RefreshTokenService refreshTokenService;
     private final AuthenticationManager authenticationManager;
@@ -50,11 +50,11 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse registerPassenger(PassengerSignupRequest request) {
         // 1. Create the base User
         User user = userService.registerUser(
+                request.name(),
                 request.email(),
                 request.password(),
                 request.phoneNumber(),
-                UserRole.ROLE_PASSENGER
-        );
+                UserRole.ROLE_PASSENGER);
 
         // 2. Delegate Passenger creation to PassengerService
         passengerService.registerPassenger(user, request);
@@ -68,11 +68,11 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse registerDriver(DriverSignupRequest request) {
         // 1. Create the base User
         User user = userService.registerUser(
+                request.name(),
                 request.email(),
                 request.password(),
                 request.phoneNumber(),
-                UserRole.ROLE_DRIVER
-        );
+                UserRole.ROLE_DRIVER);
 
         // 2. Delegate Driver creation to DriverService
         driverService.registerDriver(user, request);
@@ -91,9 +91,7 @@ public class AuthServiceImpl implements AuthService {
         var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.email(),
-                        request.password()
-                )
-        );
+                        request.password()));
 
         // 2. Extract the principal (which is your UserPrincipal)
         // and then get the domain User from it
@@ -119,11 +117,12 @@ public class AuthServiceImpl implements AuthService {
             user.setRole(UserRole.ROLE_PASSENGER);
         }
 
+        UserResponse userResponse = userMapper.toResponse(user);
+
         return AuthResponse.builder()
-                .token(jwtToken)
+                .accessToken(jwtToken)
                 .refreshToken(refreshToken.getToken())
-                .email(user.getEmail())
-                .role(user.getRole())
+                .user(userResponse)
                 .build();
     }
 }
