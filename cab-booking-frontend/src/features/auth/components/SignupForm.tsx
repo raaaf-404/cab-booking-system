@@ -66,24 +66,33 @@ export const SignupForm = ({ onSubmit, isLoading, serverError }: SignupFormProps
                 <button
                     type="button"
                     onClick={() => handleRoleChange('passenger')}
-                    className={`text-sm font-medium py-2 rounded-md transition-all duration-200 ${
-                        role === 'passenger' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`text-sm font-medium py-2 rounded-md transition-all duration-200 ${role === 'passenger' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
                 >
                     Passenger
                 </button>
                 <button
                     type="button"
                     onClick={() => handleRoleChange('driver')}
-                    className={`text-sm font-medium py-2 rounded-md transition-all duration-200 ${
-                        role === 'driver' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`text-sm font-medium py-2 rounded-md transition-all duration-200 ${role === 'driver' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
                 >
                     Driver
                 </button>
             </div>
 
             <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
+
+                <FormField label="Name" htmlFor="name" error={errors.name?.message}>
+                    <input
+                        id="name"
+                        {...register('name')}
+                        placeholder="Juan Dela Cruz"
+                        disabled={isLoading}
+                        className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:bg-gray-100"
+                    />
+                </FormField>
+
                 <FormField label="Email Address" htmlFor="email" error={errors.email?.message}>
                     <input
                         id="email"
