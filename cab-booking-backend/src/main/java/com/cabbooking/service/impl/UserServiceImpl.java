@@ -18,7 +18,6 @@ import com.cabbooking.model.enums.UserRole;
 
 import java.util.Optional;
 
-
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -50,7 +49,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User registerUser(String email, String password, String phoneNumber, UserRole role) {
+    public User registerUser(String name, String email, String password, String phoneNumber, UserRole role) {
 
         if (userRepository.existsByEmail(email))
             throw new DuplicateResourceException("Email taken");
@@ -60,6 +59,7 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = User.builder()
+                .name(name)
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .phoneNumber(phoneNumber)

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cab-booking-db
+    environment:
+      POSTGRES_DB: cabdb
+      POSTGRES_USER: cabuser
+      POSTGRES_PASSWORD: cabpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

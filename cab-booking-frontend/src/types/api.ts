@@ -65,4 +65,11 @@ export type TokenRefreshResponse = {
     tokenType: string;  // e.g., "Bearer"
 };
 
+export interface UserResponse {
+    id: number;
+    email: string;
+    role: string;
+    name: string;
+}
+
 
