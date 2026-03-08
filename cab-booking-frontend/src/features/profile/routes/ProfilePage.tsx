@@ -24,14 +24,14 @@ return (
         <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
         <div className="mt-4 text-gray-600">
           <p>
-            <span className="font-semibold">Username:</span> {user?.username}
+            <span className="font-semibold">Username:</span> {user?.email}
           </p>
           <p>
             <span className="font-semibold">Email:</span> {user?.email}
           </p>
           <p>
             <span className="font-semibold">Role:</span>{' '}
-            {user?.roles.join(', ')}
+            {user?.role}
           </p>
         </div>
       </div>
