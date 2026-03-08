@@ -1,4 +1,4 @@
-import axios , { AxiosError, InternalAxiosRequestConfig}from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/store/useAuthStore'
 
 
@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore'
 const axiosClient = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
     headers: {
-      'Content-Type': 'application/json',
+        'Content-Type': 'application/json',
     },
     withCredentials: true, // If you ever use cookies, this is ready
 });
@@ -15,7 +15,7 @@ const axiosClient = axios.create({
 // 2. Flags and Queue for Concurrency Management
 let isRefreshing = false;
 
-let  failedQueue: Array<{
+let failedQueue: Array<{
     resolve: (token: string) => void,
     reject: (error: any) => void
 }> = [];
@@ -41,7 +41,7 @@ axiosClient.interceptors.request.use(
         }
         return config;
     },
-        (error) => Promise.reject(error)
+    (error) => Promise.reject(error)
 );
 
 // 4. Create a reusable cleanup function
@@ -82,7 +82,7 @@ axiosClient.interceptors.response.use(
 
         try {
             const refreshToken = useAuthStore.getState().refreshToken;
-           // Handle the missing refresh token explicitly
+            // Handle the missing refresh token explicitly
             if (!refreshToken) {
                 return handleSessionFailure(new Error("No refresh token available"));
             }
@@ -96,7 +96,7 @@ axiosClient.interceptors.response.use(
             // We use a clean axios instance to avoid interceptors on the refresh call itself
             // This prevents circular dependencies and infinite loops
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/auth/refresh-token`,
+                `${import.meta.env.VITE_API_URL}/v1/auth/refresh-token`,
                 { refreshToken }
             );
 
