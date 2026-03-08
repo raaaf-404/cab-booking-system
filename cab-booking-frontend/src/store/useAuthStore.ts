@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { type User } from '@/types/api';
+import { type UserResponse } from '@/types/api';
 import { type AuthResponse } from '@/types/auth.ts';
 
 // 1. Define the shape of your store's state
 interface AuthState {
     accessToken: string | null;
     refreshToken: string | null;
-    user: User | null;
+    user: UserResponse | null;
     isHydrated: boolean;
     setCredentials: (data: AuthResponse) => void;
     clearCredentials: () => void;
