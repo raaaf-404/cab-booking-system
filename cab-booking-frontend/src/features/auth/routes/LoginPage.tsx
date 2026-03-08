@@ -10,6 +10,9 @@ import { type LoginRequest } from '@/types/api';
 // Components
 import LoginForm from '../components/LoginForm';
 
+// Utils
+import { normalizeRole } from '@/utils/roleUtils';
+
 // Adjust this type based on exactly what your backend AuthResponse looks like
 interface ApiErrorResponse {
     message: string;
@@ -36,14 +39,15 @@ export const LoginPage = () => {
 
             // Determine role-based fallback dashboard
             // Safety check: ensure response.data.user.role exists!
-            const userRole = response.user?.role;
+            const userRole = normalizeRole(response.user?.role);
             const defaultDashboard = userRole === 'driver' ? '/driver/dashboard' : '/passenger/dashboard';
-
             // Navigate using Intended Destination, or fallback to Default Dashboard
             const navigateTo = intendedDestination || defaultDashboard;
 
             // Navigate with 'replace: true' to prevent breaking the browser's Back button
             navigate(navigateTo, { replace: true });
+
+            setCredentials(response);
         },
     });
 
