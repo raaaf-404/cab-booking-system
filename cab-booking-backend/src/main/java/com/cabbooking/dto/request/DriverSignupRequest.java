@@ -7,6 +7,10 @@ import jakarta.validation.constraints.*;
  * Using Java Record for immutability and conciseness.
  */
 public record DriverSignupRequest(
+
+        @NotBlank(message = "Name is required")
+        String name,
+
         @NotBlank(message = "Email is required")
         @Email(message = "Email should be valid")
         String email,
