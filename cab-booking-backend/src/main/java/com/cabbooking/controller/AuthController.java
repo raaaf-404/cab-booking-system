@@ -47,7 +47,6 @@ public class AuthController {
     private final UserService userService;
     private final JwtService jwtService;
 
-
     private final UserDetailsServiceImpl userDetailsService;
 
     /**
@@ -55,7 +54,7 @@ public class AuthController {
      */
     @PostMapping("/register/passenger")
     public ResponseEntity<AuthResponse> registerPassenger(@Valid @RequestBody PassengerSignupRequest request) {
-        AuthResponse  response = authService.registerPassenger(request);
+        AuthResponse response = authService.registerPassenger(request);
         return ResponseEntity.ok(response);
     }
 
@@ -106,8 +105,7 @@ public class AuthController {
                     String newAccessToken = jwtService.generateToken(principal);
 
                     return ResponseEntity.ok(
-                            new TokenRefreshResponse(newAccessToken, requestRefreshToken)
-                    );
+                            new TokenRefreshResponse(newAccessToken, requestRefreshToken));
                 })
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token is not in database!"));
     }
