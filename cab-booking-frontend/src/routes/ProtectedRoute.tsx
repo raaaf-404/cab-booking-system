@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/store/useAuthStore';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AppRole } from '@/types/api';
-
+import { normalizeRole } from '@/utils/roleUtils';
 
 interface ProtectedRouteProps {
     allowedRoles?: AppRole[];
@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   // 1. Get the user from our global store
-   const { user, accessToken, isHydrated } = useAuthStore();
+  const { user, accessToken, isHydrated } = useAuthStore();
   const location = useLocation();
 
     // 1. Wait for Auth State to load from LocalStorage
@@ -30,8 +30,10 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
 
     // 3. Role-Based Access Control (RBAC)
+
+    const userRole = normalizeRole(user.role);
     if (allowedRoles) {
-        const hasRequiredRole = user.roles.some((role) => allowedRoles.includes(role));
+        const hasRequiredRole =  allowedRoles.includes(userRole);
         if (!hasRequiredRole) {
             // Redirect to a safe page if they don't have access
             return <Navigate to="/unauthorized" replace />;
