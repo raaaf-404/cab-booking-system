@@ -8,33 +8,34 @@ import type {
 } from '@/types/api';
 
 import type {
-    PassengerSignupRequest,
-    DriverSignupRequest,
-    AuthResponse }
-    from '../types/auth';
+  PassengerSignupRequest,
+  DriverSignupRequest,
+  AuthResponse
+}
+  from '../types/auth';
 
 export const registerPassenger = async (
-    data: PassengerSignupRequest
+  data: PassengerSignupRequest
 ): Promise<AuthResponse> => {
-    // We wrap this in a try/catch if we want global logging,
-    // otherwise, let the caller (like TanStack Query) handle the error.
-    const {data: response} = await axiosClient.post<AuthResponse>('/auth/register/passenger', data);
-    return response;
+  // We wrap this in a try/catch if we want global logging,
+  // otherwise, let the caller (like TanStack Query) handle the error.
+  const { data: response } = await axiosClient.post<AuthResponse>('/auth/register/passenger', data);
+  return response;
 };
 
 export const registerDriver = async (
-    data: DriverSignupRequest
+  data: DriverSignupRequest
 ): Promise<AuthResponse> => {
-    const {data: response} = await axiosClient.post<AuthResponse>('/auth/signup/driver', data);
-    return response;
+  const { data: response } = await axiosClient.post<AuthResponse>('/auth/signup/driver', data);
+  return response;
 };
 /**
  * Sends a login request to the server.
  */
 export const login = async (data: LoginRequest): Promise<AuthResponse> => {
-    // We use .data because axios wraps the response
-    const { data: response } = await axiosClient.post('v1/auth/login', data);
-    return response;
+  // We use .data because axios wraps the response
+  const { data: response } = await axiosClient.post('/auth/login', data);
+  return response;
 };
 
 /**
