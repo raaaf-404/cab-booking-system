@@ -1,11 +1,11 @@
 import { createBrowserRouter } from 'react-router-dom';
-import HomePage from '@/features/booking/routes/HomePage';
+import HomePage from '@/pages/HomePage.tsx';
 import LoginPage from '@/features/auth/routes/LoginPage';
 import SignupPage from '@/features/auth/routes/SignupPage';
-import MainLayout from '@/components/layout/MainLayout';
+import MainLayout from '@/components/common/MainLayout';
 import ProfilePage from '@/features/profile/routes/ProfilePage';
 import ProtectedRoute from './ProtectedRoute';
-import NotFoundPage from "@/components/pages/NotFoundPage.tsx";
+import NotFoundPage from "@/pages/NotFoundPage.tsx";
 
 // Assuming you have these imported
 // import PassengerDashboard from '...';
