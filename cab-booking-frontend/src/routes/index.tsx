@@ -14,14 +14,16 @@ import NotFoundPage from "@/pages/NotFoundPage.tsx";
 export const router = createBrowserRouter([
     // HomePage is a standalone marketing page with its own layout/navbar
     {
-        path: '/',
-        element: <HomePage />,
-    },
-    {
         element: <MainLayout />,
         // Optional: Add a global error boundary here
         // errorElement: <GlobalErrorPage />,
         children: [
+
+
+            {
+                index: true,
+                element: <HomePage />,
+            },
             // ==========================================
             // 1. PUBLIC ROUTES
             // ==========================================

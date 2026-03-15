@@ -1,0 +1,419 @@
+/* ============================================================
+   styles/global.css
+   Tara Cab Booking System — Global Styles
+
+   HOW TO WIRE THIS UP:
+   In your src/main.tsx, add ONE import at the very top:
+
+     import './styles/global.css';
+
+   That's it. React/Vite will inject these styles globally
+   into every page of the app automatically.
+
+   WHY NOT import this in App.tsx or each component?
+   CSS imported in a component file still becomes global —
+   React doesn't scope CSS by default. Putting it in main.tsx
+   makes the intent clear: "this is the ONE global stylesheet."
+
+   STRUCTURE OF THIS FILE:
+   1. Google Fonts import
+   2. CSS reset
+   3. CSS variables (design tokens)
+   4. Base HTML styles
+   5. Keyframe animations
+   6. Utility animation classes
+   7. Component-specific classes
+      → Navbar classes
+      → Floating card classes
+      → CTA button
+      → Trust pill
+============================================================ */
+
+
+/* ============================================================
+   1. GOOGLE FONTS
+   @import must always be the FIRST line in a CSS file.
+   Putting it here (not in a JSX <style> tag) is correct
+   because fonts are a global concern — not a component one.
+============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+
+/* ============================================================
+   2. CSS RESET
+   Removes browser default margin/padding/box-sizing
+   so every element starts from a clean, predictable base.
+   *::before and *::after covers pseudo-elements too.
+============================================================ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin:     0;
+    padding:    0;
+}
+
+
+/* ============================================================
+   3. CSS VARIABLES (Design Tokens)
+   Defined on :root so they're available everywhere in the app.
+
+   WHAT ARE DESIGN TOKENS?
+   They're named values for colors, shadows, and fonts.
+   Instead of writing #2563EB 40 times, you write var(--blue).
+   When the brand color changes, you update ONE line here —
+   not 40 places across the codebase.
+
+   USED BY:
+   → Every component that references var(--blue), var(--text) etc.
+============================================================ */
+:root {
+    /* Backgrounds */
+    --bg:          #FFFFFF;
+    --bg-soft:     #F8FAFC;
+
+    /* Borders */
+    --border:      #E2E8F0;
+
+    /* Brand blue palette */
+    --blue:        #2563EB;   /* primary buttons, links, accents    */
+    --blue-dark:   #1D4ED8;   /* hover state of primary buttons     */
+    --blue-light:  #EFF6FF;   /* subtle blue tint backgrounds       */
+    --blue-mid:    #DBEAFE;   /* medium blue fills (badges, pills)  */
+
+    /* Text hierarchy */
+    --text:        #0F172A;   /* primary — headings, important copy */
+    --text-sub:    #475569;   /* secondary — body text, nav links   */
+    --text-muted:  #94A3B8;   /* tertiary — labels, placeholders    */
+
+    /* Typography */
+    --font:        'Plus Jakarta Sans', sans-serif;
+
+    /* Shadows */
+    --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-lg:   0 12px 40px rgba(0, 0, 0, 0.09);
+    --shadow-blue: 0 8px 24px rgba(37, 99, 235, 0.25);
+
+    /* Card shadow — two-layer for realistic depth */
+    --card-shadow:
+            0 4px 24px rgba(15, 23, 42, 0.08),
+            0 1px 4px  rgba(15, 23, 42, 0.04);
+}
+
+
+/* ============================================================
+   4. BASE HTML STYLES
+   Sets the default font, color, and rendering for the whole app.
+   -webkit-font-smoothing: antialiased makes text crisper on Mac.
+============================================================ */
+html,
+body {
+    background:               var(--bg);
+    font-family:              var(--font);
+    color:                    var(--text);
+    -webkit-font-smoothing:   antialiased;
+    -moz-osx-font-smoothing:  grayscale;
+}
+
+
+/* ============================================================
+   5. KEYFRAME ANIMATIONS
+   @keyframes define the "from → to" motion of an animation.
+   They do nothing on their own — they must be referenced by
+   an animation: property on a class (see section 6).
+
+   WHY ARE THERE SO MANY FLOAT KEYFRAMES?
+   Each floating card (f1–f5) uses a different float animation
+   so they move independently. If all cards used float1, they'd
+   move in perfect sync — which looks mechanical, not natural.
+   Different durations + slight rotation differences = depth.
+============================================================ */
+
+/* Page entrance — slides element up while fading in */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Simple fade in — no movement */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Card float animations — each with unique rotation + distance */
+@keyframes float1 {
+    0%,  100% { transform: translateY(0px)   rotate(-1deg);   }
+    50%        { transform: translateY(-12px) rotate(0.5deg);  }
+}
+@keyframes float2 {
+    0%,  100% { transform: translateY(0px)  rotate(1deg);    }
+    50%        { transform: translateY(-9px) rotate(-0.5deg); }
+}
+@keyframes float3 {
+    0%,  100% { transform: translateY(0px)   rotate(-0.5deg); }
+    50%        { transform: translateY(-14px) rotate(1deg);    }
+}
+@keyframes float4 {
+    0%,  100% { transform: translateY(0px)  rotate(0.5deg); }
+    50%        { transform: translateY(-8px) rotate(-1deg);  }
+}
+
+/* Connector dots — scale + opacity pulse */
+@keyframes pulseDot {
+    0%,  100% { transform: scale(1);   opacity: 0.5; }
+    50%        { transform: scale(1.5); opacity: 1;   }
+}
+
+/* Location pin entrance — drops and bounces slightly */
+@keyframes pinDrop {
+    0%   { opacity: 0; transform: translateY(-20px) scale(0.7);  }
+    65%  {             transform: translateY(4px)   scale(1.06); }
+    100% { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+
+/* Ripple ring — expanding circle around the location pin */
+@keyframes ripple {
+    0%   { transform: scale(0.5); opacity: 0.6; }
+    100% { transform: scale(3);   opacity: 0;   }
+}
+
+/* Cards slide in from the right on page load */
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0);    }
+}
+
+/* Green check badge — pops in with a slight overshoot */
+@keyframes popIn {
+    0%   { transform: scale(0);    opacity: 0; }
+    70%  { transform: scale(1.15);             }
+    100% { transform: scale(1);    opacity: 1; }
+}
+
+/* Progress bar — fills from 0% to 72% width */
+@keyframes fillBar {
+    from { width: 0%;   }
+    to   { width: 72%;  }
+}
+
+/* Ambient blob — slow rotation with subtle scale breathing */
+@keyframes blobSpin {
+    0%   { transform: rotate(0deg)   scale(1);    }
+    33%  { transform: rotate(120deg) scale(1.04); }
+    66%  { transform: rotate(240deg) scale(0.97); }
+    100% { transform: rotate(360deg) scale(1);    }
+}
+
+
+/* ============================================================
+   6. UTILITY ANIMATION CLASSES
+   These are short classes applied directly to JSX elements
+   to trigger the keyframes above.
+
+   NAMING CONVENTION:
+     .au  = animate-up   (fadeUp keyframe)
+     .af  = animate-fade (fadeIn keyframe)
+     .d1–.d5 = delay steps (stagger children into view)
+
+   USED BY:
+   → HomeNavbar.tsx  (.af .d1, .af .d2, .af .d3)
+   → HeroSection.tsx (.au .d1 through .au .d5)
+   → IconPills.tsx   (.au .d5)
+============================================================ */
+
+/* Base animation types */
+.au { animation: fadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.af { animation: fadeIn 0.5s ease both; }
+
+/* Stagger delays — apply alongside .au or .af */
+.d1 { animation-delay: 0.06s; }
+.d2 { animation-delay: 0.18s; }
+.d3 { animation-delay: 0.30s; }
+.d4 { animation-delay: 0.44s; }
+.d5 { animation-delay: 0.58s; }
+
+
+/* ============================================================
+   7. COMPONENT-SPECIFIC CLASSES
+
+   WHY ARE THESE IN global.css AND NOT IN COMPONENT FILES?
+   This project uses inline styles — there are no CSS modules
+   or styled-components. CSS classes that target pseudo-states
+   like :hover and ::after CANNOT be written as inline styles
+   in React. They must live in a real CSS file.
+
+   That makes global.css the correct home for them.
+
+   In a future refactor, these could move to CSS Modules
+   (Navbar.module.css, Hero.module.css etc.) for proper scoping.
+============================================================ */
+
+/* ── Floating Card Base ─────────────────────────────────────
+   USED BY: FloatingIllustration.tsx (.float-card on all 5 cards)
+   The .f1–.f5 classes add the float animation on top of this.
+────────────────────────────────────────────────────────────── */
+.float-card {
+    background:    white;
+    border-radius: 18px;
+    box-shadow:    var(--card-shadow);
+    border:        1px solid rgba(226, 232, 240, 0.8);
+    position:      absolute;
+}
+
+/* Per-card entrance + independent float animation.
+   Two animations separated by a comma — both run simultaneously.
+   First: slides in from right (entrance, plays once).
+   Second: floats up/down (loop, starts after 1s delay). */
+.f1 {
+    animation:
+            slideInRight 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.20s both,
+            float1 5.5s ease-in-out 1s infinite;
+}
+.f2 {
+    animation:
+            slideInRight 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.38s both,
+            float2 6.2s ease-in-out 1s infinite;
+}
+.f3 {
+    animation:
+            slideInRight 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.54s both,
+            float3 5.0s ease-in-out 1s infinite;
+}
+.f4 {
+    animation:
+            slideInRight 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.68s both,
+            float4 6.8s ease-in-out 1s infinite;
+}
+.f5 {
+    animation:
+            slideInRight 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.80s both,
+            float1 7.0s ease-in-out 1s infinite;
+}
+
+
+/* ── Specific Animation Classes ─────────────────────────────
+   USED BY:
+   .pin-in    → LocationPinCard in FloatingIllustration.tsx
+   .pop-in    → RideConfirmedCard green check badge
+   .fill-bar  → RideConfirmedCard progress bar
+   .pulse-dot → ConnectorLines SVG dots
+   .ripple-ring → LocationPinCard expanding ring
+   .blob-spin → AmbientBlobs primary blob
+────────────────────────────────────────────────────────────── */
+.pin-in {
+    animation: pinDrop 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.9s both;
+}
+.pop-in {
+    animation: popIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 1.2s both;
+}
+.fill-bar {
+    animation: fillBar 1.4s cubic-bezier(0.4, 0, 0.2, 1) 0.9s both;
+}
+.pulse-dot {
+    animation: pulseDot 2s ease-in-out infinite;
+}
+.ripple-ring {
+    animation:        ripple 2.2s ease-out 1.6s infinite;
+    transform-origin: center;
+}
+.blob-spin {
+    animation: blobSpin 18s linear infinite;
+}
+
+
+/* ── Navbar Classes ─────────────────────────────────────────
+   USED BY: HomeNavbar.tsx
+
+   .nav-a — nav link anchor tag styles.
+   :hover cannot be written as an inline style in React,
+   so it must live here.
+
+   .scrolled-nav — applied when window.scrollY > 8px.
+   Adds a subtle bottom shadow to signal the page has scrolled.
+   !important overrides the inline transition style on the <nav>.
+────────────────────────────────────────────────────────────── */
+.nav-a {
+    font-family:     var(--font);
+    font-size:       14px;
+    font-weight:     500;
+    color:           var(--text-sub);
+    text-decoration: none;
+    cursor:          pointer;
+    transition:      color 0.18s;
+}
+.nav-a:hover {
+    color: var(--text);
+}
+
+.scrolled-nav {
+    box-shadow: 0 1px 0 var(--border), var(--shadow-sm) !important;
+}
+
+
+/* ── CTA Button ─────────────────────────────────────────────
+   USED BY: HeroSection.tsx (.cta-btn on the "Book a Ride" button)
+
+   The ::after pseudo-element creates a shimmer/shine effect
+   that sweeps across the button on hover.
+   This cannot be done with inline styles — pseudo-elements
+   REQUIRE a real CSS class.
+────────────────────────────────────────────────────────────── */
+.cta-btn {
+    display:         inline-flex;
+    align-items:     center;
+    gap:             10px;
+    background:      var(--blue);
+    color:           white;
+    border:          none;
+    border-radius:   14px;
+    padding:         16px 36px;
+    font-family:     var(--font);
+    font-size:       16px;
+    font-weight:     700;
+    cursor:          pointer;
+    box-shadow:      var(--shadow-blue);
+    transition:      background 0.2s, transform 0.15s, box-shadow 0.2s;
+    letter-spacing:  -0.1px;
+    position:        relative;
+    overflow:        hidden; /* clips the shimmer to the button shape */
+}
+
+/* Shimmer layer — hidden by default, sweeps right on hover */
+.cta-btn::after {
+    content:    '';
+    position:   absolute;
+    inset:      0;
+    background: linear-gradient(
+            105deg,
+            transparent             35%,
+            rgba(255, 255, 255, 0.18) 50%,
+            transparent             65%
+    );
+    transform:  translateX(-100%); /* starts off-screen left */
+    transition: transform 0.45s ease;
+}
+.cta-btn:hover::after {
+    transform: translateX(100%); /* sweeps to off-screen right */
+}
+.cta-btn:hover {
+    background: var(--blue-dark);
+    transform:  translateY(-2px);
+    box-shadow: 0 14px 36px rgba(37, 99, 235, 0.30);
+}
+.cta-btn:active {
+    transform: translateY(0); /* snaps back on click */
+}
+
+
+/* ── Trust / Icon Pill ───────────────────────────────────────
+   USED BY: IconPills.tsx (.trust-item on each pill wrapper)
+   Simple lift on hover — the color transitions are handled
+   inline in the component via onMouseEnter/onMouseLeave.
+────────────────────────────────────────────────────────────── */
+.trust-item {
+    transition: transform 0.18s;
+}
+.trust-item:hover {
+    transform: translateY(-2px);
+}

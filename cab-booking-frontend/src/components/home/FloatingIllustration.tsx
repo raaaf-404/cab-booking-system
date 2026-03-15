@@ -520,7 +520,7 @@ const FareCard = ({ rows, total }: FareCardProps) => (
     </div>
 );
 
-/ ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // PRIVATE SUB-COMPONENT: DecorativeDots
 // ─────────────────────────────────────────────────────────────
 // Scattered dots that add texture to the illustration.
